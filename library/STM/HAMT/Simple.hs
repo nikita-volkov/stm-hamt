@@ -48,12 +48,10 @@ size :: HAMT row -> STM Int
 size (HAMT nodes) =
   A.size nodes
 
-{-# INLINE focus #-}
 focus :: (Eq row, Hashable row) => B.Focus row STM result -> row -> HAMT row -> STM result
 focus focus row (HAMT nodes) =
   A.focus focus (hash row) row 0 nodes
 
-{-# INLINE insert #-}
 insert :: (Eq row, Hashable row) => row -> HAMT row -> STM ()
 insert row (HAMT nodes) =
   void (A.insert (hash row) row 0 nodes)
