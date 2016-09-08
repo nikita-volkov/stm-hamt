@@ -53,6 +53,18 @@ find p (SizedArray s a) = loop 0
         else loop (succ i)
       else Nothing
 
+{-# INLINE indexOf #-}
+indexOf :: Eq a => a -> SizedArray a -> Maybe Index
+indexOf value (SizedArray size array) =
+  recur 0
+  where
+    recur index =
+      if index < size
+        then if indexArray array index == value
+          then Just index
+          else recur (succ index)
+        else Nothing
+
 -- |
 -- Unsafe. Doesn't check the index overflow.
 {-# INLINE insert #-}

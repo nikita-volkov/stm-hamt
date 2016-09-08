@@ -52,6 +52,17 @@ find predicate =
     Many sizedArray ->
       B.find predicate sizedArray
 
+{-# INLINE indexOf #-}
+indexOf :: Eq a => a -> SizedArray1 a -> Maybe Int
+indexOf value =
+  \case
+    One foundValue ->
+      if value == foundValue
+        then Just 0
+        else Nothing
+    Many sizedArray ->
+      B.indexOf value sizedArray
+
 -- |
 -- Unsafe. Doesn't check the index overflow.
 {-# INLINE insert #-}
