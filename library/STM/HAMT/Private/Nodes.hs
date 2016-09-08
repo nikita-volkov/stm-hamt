@@ -35,7 +35,6 @@ newIO =
 -- but its Eq instance only considers the key.
 -- 
 -- Returns a flag, specifying, whether the size has been affected.
-{-# INLINE insert #-}
 insert :: Eq row => Int -> row -> C.Level -> Nodes row -> STM Bool
 insert hash row level (Nodes nodeArray) =
   A.lookup nodeArray index >>=
@@ -85,7 +84,6 @@ null :: Nodes row -> STM Bool
 null (Nodes nodeArray) =
   A.null nodeArray
 
-{-# INLINE focus #-}
 focus :: Eq row => D.Focus row STM result -> Int -> row -> C.Level -> Nodes row -> STM result
 focus rowFocus lookupHash lookupRow level (Nodes nodeArray) =
   A.focus nodeFocus nodeIndex nodeArray
