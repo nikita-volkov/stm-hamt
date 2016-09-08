@@ -27,12 +27,12 @@ newIO =
 
 -- |
 -- Uses the Eq instance to compare the key projection of the row.
--- The whole row doesn't necessarily have to be equal,
+-- The whole row doesn't necessarily have to be equal
 -- for that instance of Eq to say that it is.
 -- This allows to implement such higher-level data-structures,
 -- as Map,
 -- where the row consists of a key and a value,
--- but its Eq instance only considers the keys.
+-- but its Eq instance only considers the key.
 -- 
 -- Returns a flag, specifying, whether the size has been affected.
 {-# INLINE insert #-}
