@@ -47,7 +47,7 @@ library
     STM.HAMT.Private.WordArray.Indices
     STM.HAMT.Private.WordArray
     STM.HAMT.Private.SizedArray
-    STM.HAMT.Private.Level
+    STM.HAMT.Private.Hash
     STM.HAMT.Private.Nodes
     STM.HAMT.Private.Focuses
     STM.HAMT.Private.SizedArray1

@@ -56,7 +56,7 @@ size (HAMT nodes size) =
 focus :: (Eq row, Hashable row) => B.Focus row STM result -> row -> HAMT row -> STM result
 focus focus row (HAMT nodes size) =
   do
-    (result, sizeModifier) <- A.focus (C.testingSizeChange (Just pred) Nothing (Just succ) focus) (hash row) row 0 nodes
+    (result, sizeModifier) <- A.focus (C.testingSizeChange (Just pred) Nothing (Just succ) focus) row (hash row) nodes
     forM_ sizeModifier (modifyTVar' size)
     return result
 
@@ -64,7 +64,7 @@ focus focus row (HAMT nodes size) =
 insert :: (Eq row, Hashable row) => row -> HAMT row -> STM ()
 insert row (HAMT nodes size) =
   do
-    inserted <- A.insert (hash row) row 0 nodes
+    inserted <- A.insert row (hash row) nodes
     when inserted (modifyTVar' size succ)
 
 {-# INLINE deleteAll #-}
@@ -77,9 +77,9 @@ deleteAll (HAMT nodes size) =
 {-# INLINE fold #-}
 fold :: (result -> row -> STM result) -> result -> HAMT row -> STM result
 fold progress result (HAMT nodes _) =
-  A.fold progress result 0 nodes
+  A.fold progress result nodes
 
 {-# INLINE stream #-}
 stream :: HAMT row -> ListT STM row
 stream (HAMT nodes _) =
-  A.stream 0 nodes
+  A.stream nodes

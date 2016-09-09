@@ -3,7 +3,7 @@ module STM.HAMT.Private.Nodes where
 import STM.HAMT.Private.Prelude hiding (insert, lookup, delete, fold, null)
 import qualified STM.HAMT.Private.TWordArray as A
 import qualified STM.HAMT.Private.SizedArray1 as B
-import qualified STM.HAMT.Private.Level as C
+import qualified STM.HAMT.Private.Hash as C
 import qualified Focus.Impure as D
 import qualified ListT as E
 
@@ -35,8 +35,8 @@ newIO =
 -- but its Eq instance only considers the key.
 -- 
 -- Returns a flag, specifying, whether the size has been affected.
-insert :: Eq row => Int -> row -> C.Level -> Nodes row -> STM Bool
-insert hash row level (Nodes nodeArray) =
+insert :: Eq row => row -> C.Hash -> Nodes row -> STM Bool
+insert row hash (Nodes nodeArray) =
   A.lookup nodeArray index >>=
   \case
     Nothing ->
@@ -44,7 +44,7 @@ insert hash row level (Nodes nodeArray) =
         A.insert nodeArray index (Node_Rows hash (B.singleton row))
         return True
     Just (Node_Nodes nodes) ->
-      insert hash row (C.succ level) nodes
+      insert row (C.succLevel hash) nodes
     Just (Node_Rows foundHash foundRowArray) ->
       if foundHash == hash
         then 
@@ -59,37 +59,36 @@ insert hash row level (Nodes nodeArray) =
                 return True
         else
           do
-            subNodes <- pair hash (Node_Rows hash (B.singleton row)) foundHash (Node_Rows foundHash foundRowArray) (C.succ level)
+            subNodes <- pair (C.succLevel hash) (Node_Rows (C.succLevel hash) (B.singleton row)) (C.succLevel foundHash) (Node_Rows (C.succLevel foundHash) foundRowArray)
             A.insert nodeArray index (Node_Nodes subNodes)
             return True
   where
     index =
-      C.hashIndex hash level
+      C.toIndex hash
 
-{-# INLINE pair #-}
-pair :: Int -> Node row -> Int -> Node row -> C.Level -> STM (Nodes row)
-pair hash1 node1 hash2 node2 level =
+pair :: Int -> Node row -> Int -> Node row -> STM (Nodes row)
+pair hash1 node1 hash2 node2 =
   fmap Nodes $
   if index1 == index2
-    then A.singleton index1 . Node_Nodes =<< pair hash1 node1 hash2 node2 (C.succ level)
+    then A.singleton index1 . Node_Nodes =<< pair (C.succLevel hash1) node1 (C.succLevel hash2) node2
     else A.pair index1 node1 index2 node2
   where
     index1 =
-      C.hashIndex hash1 level
+      C.toIndex hash1
     index2 =
-      C.hashIndex hash2 level
+      C.toIndex hash2
 
 {-# INLINE null #-}
 null :: Nodes row -> STM Bool
 null (Nodes nodeArray) =
   A.null nodeArray
 
-focus :: Eq row => D.Focus row STM result -> Int -> row -> C.Level -> Nodes row -> STM result
-focus rowFocus lookupHash lookupRow level (Nodes nodeArray) =
+focus :: Eq row => D.Focus row STM result -> row -> C.Hash -> Nodes row -> STM result
+focus rowFocus lookupRow lookupHash (Nodes nodeArray) =
   A.focus nodeFocus nodeIndex nodeArray
   where
     nodeIndex =
-      C.hashIndex lookupHash level
+      C.toIndex lookupHash
     nodeFocus =
       \case
         Nothing ->
@@ -98,7 +97,7 @@ focus rowFocus lookupHash lookupRow level (Nodes nodeArray) =
           case node of
             Node_Nodes nodes ->
               do
-                result <- focus rowFocus lookupHash lookupRow (C.succ level) nodes
+                result <- focus rowFocus lookupRow (C.succLevel lookupHash) nodes
                 instruction <- fmap (bool D.Keep D.Remove) (null nodes)
                 return (result, instruction)
             Node_Rows foundHash foundRowArray ->
@@ -138,26 +137,26 @@ focus rowFocus lookupHash lookupRow level (Nodes nodeArray) =
                       \case
                         D.Set newRow ->
                           fmap (D.Set . Node_Nodes) $
-                          pair lookupHash (Node_Rows lookupHash (B.singleton newRow)) foundHash (Node_Rows foundHash foundRowArray) (C.succ level)
+                          pair (C.succLevel lookupHash) (Node_Rows (C.succLevel lookupHash) (B.singleton newRow)) (C.succLevel foundHash) (Node_Rows (C.succLevel foundHash) foundRowArray)
                         _ ->
                           return D.Keep
 
 {-# INLINABLE fold #-}
-fold :: (result -> row -> STM result) -> result -> C.Level -> Nodes row -> STM result
-fold rowProgress result level (Nodes nodeArray) =
+fold :: (result -> row -> STM result) -> result -> Nodes row -> STM result
+fold rowProgress result (Nodes nodeArray) =
   A.fold nodeProgress result nodeArray
   where
     nodeProgress result =
       \case
-        Node_Nodes nodes -> fold rowProgress result (C.succ level) nodes
+        Node_Nodes nodes -> fold rowProgress result nodes
         Node_Rows _ rowArray -> B.fold rowProgress result rowArray
 
 {-# INLINABLE stream #-}
-stream :: C.Level -> Nodes row -> E.ListT STM row
-stream level (Nodes nodeArray) =
+stream :: Nodes row -> E.ListT STM row
+stream (Nodes nodeArray) =
   A.stream nodeArray >>= \case
     Node_Nodes nodes ->
-      stream (C.succ level) nodes
+      stream nodes
     Node_Rows _ rowArray ->
       E.fromFoldable rowArray
 

@@ -51,12 +51,12 @@ size (HAMT nodes) =
 {-# INLINE focus #-}
 focus :: (Eq row, Hashable row) => B.Focus row STM result -> row -> HAMT row -> STM result
 focus focus row (HAMT nodes) =
-  A.focus focus (hash row) row 0 nodes
+  A.focus focus row (hash row) nodes
 
 {-# INLINE insert #-}
 insert :: (Eq row, Hashable row) => row -> HAMT row -> STM ()
 insert row (HAMT nodes) =
-  void (A.insert (hash row) row 0 nodes)
+  void (A.insert row (hash row) nodes)
 
 {-# INLINE deleteAll #-}
 deleteAll :: HAMT row -> STM ()
@@ -66,9 +66,9 @@ deleteAll (HAMT nodes) =
 {-# INLINE fold #-}
 fold :: (result -> row -> STM result) -> result -> HAMT row -> STM result
 fold progress result (HAMT nodes) =
-  A.fold progress result 0 nodes
+  A.fold progress result nodes
 
 {-# INLINE stream #-}
 stream :: HAMT row -> ListT STM row
 stream (HAMT nodes) =
-  A.stream 0 nodes
+  A.stream nodes
