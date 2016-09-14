@@ -48,8 +48,8 @@ insert row hash (Nodes nodeArray) =
     Just (Node_Rows foundHash foundRowArray) ->
       if foundHash == hash
         then 
-          case B.indexOf row foundRowArray of
-            Just foundIndex ->
+          case B.find (== row) foundRowArray of
+            Just (foundIndex, _) ->
               do
                 A.insert nodeArray index (Node_Rows hash (B.insert foundIndex row foundRowArray))
                 return False
@@ -103,9 +103,9 @@ focus rowFocus lookupRow lookupHash (Nodes nodeArray) =
             Node_Rows foundHash foundRowArray ->
               case lookupHash == foundHash of
                 True ->
-                  case B.indexOf lookupRow foundRowArray of
-                    Just foundIndex ->
-                      fmap (fmap instruction) (rowFocus (Just lookupRow))
+                  case B.find (== lookupRow) foundRowArray of
+                    Just (foundIndex, foundRow) ->
+                      fmap (fmap instruction) (rowFocus (Just foundRow))
                       where
                         instruction =
                           \case
