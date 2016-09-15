@@ -31,12 +31,12 @@ type Interpreter container =
 specializedInterpreter :: Interpreter A.HAMT
 specializedInterpreter container =
   iterM $ \case
-    Insert row n -> A.insert row container >> n
+    Insert row n -> A.insert id row container >> n
 
 focusInterpreter :: Interpreter A.HAMT
 focusInterpreter container =
   iterM $ \case
-    Insert row n -> A.focus (D.insert row) row container >> n
+    Insert row n -> A.focus (D.insert row) id row container >> n
 
 
 -- * Session and runners

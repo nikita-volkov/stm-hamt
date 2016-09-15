@@ -26,17 +26,9 @@ newIO =
   Nodes <$> A.newIO
 
 -- |
--- Uses the Eq instance to compare the key projection of the row.
--- The whole row doesn't necessarily have to be equal
--- for that instance of Eq to say that it is.
--- This allows to implement such higher-level data-structures,
--- as Map,
--- where the row consists of a key and a value,
--- but its Eq instance only considers the key.
--- 
 -- Returns a flag, specifying, whether the size has been affected.
-insert :: Eq row => row -> C.Hash -> Nodes row -> STM Bool
-insert row hash (Nodes nodeArray) =
+insert :: (row -> Bool) -> row -> C.Hash -> Nodes row -> STM Bool
+insert existingRowTest row hash (Nodes nodeArray) =
   {-# SCC "insert" #-} 
   A.lookup nodeArray index >>=
   \case
@@ -45,11 +37,11 @@ insert row hash (Nodes nodeArray) =
         A.insert nodeArray index (Node_Rows hash (B.singleton row))
         return True
     Just (Node_Nodes nodes) ->
-      insert row (C.succLevel hash) nodes
+      insert existingRowTest row (C.succLevel hash) nodes
     Just (Node_Rows foundHash foundRowArray) ->
       if foundHash == hash
         then 
-          case B.find (== row) foundRowArray of
+          case B.find existingRowTest foundRowArray of
             Just (foundIndex, _) ->
               do
                 A.insert nodeArray index (Node_Rows hash (B.insert foundIndex row foundRowArray))
@@ -85,8 +77,8 @@ null :: Nodes row -> STM Bool
 null (Nodes nodeArray) =
   A.null nodeArray
 
-focus :: Eq row => D.Focus row STM result -> row -> C.Hash -> Nodes row -> STM result
-focus rowFocus lookupRow lookupHash (Nodes nodeArray) =
+focus :: D.Focus row STM result -> (row -> Bool) -> C.Hash -> Nodes row -> STM result
+focus rowFocus rowTest lookupHash (Nodes nodeArray) =
   {-# SCC "focus" #-} 
   A.focus nodeFocus nodeIndex nodeArray
   where
@@ -100,13 +92,13 @@ focus rowFocus lookupRow lookupHash (Nodes nodeArray) =
           case node of
             Node_Nodes nodes ->
               do
-                result <- focus rowFocus lookupRow (C.succLevel lookupHash) nodes
+                result <- focus rowFocus rowTest (C.succLevel lookupHash) nodes
                 instruction <- fmap (bool D.Keep D.Remove) (null nodes)
                 return (result, instruction)
             Node_Rows foundHash foundRowArray ->
               case lookupHash == foundHash of
                 True ->
-                  case B.find (== lookupRow) foundRowArray of
+                  case B.find rowTest foundRowArray of
                     Just (foundIndex, foundRow) ->
                       fmap (fmap instruction) (rowFocus (Just foundRow))
                       where
