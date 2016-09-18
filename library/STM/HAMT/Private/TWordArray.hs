@@ -42,7 +42,7 @@ insert (TWordArray var) index value =
 {-# INLINE lookup #-}
 lookup :: TWordArray a -> Int -> STM (Maybe a)
 lookup (TWordArray var) index =
-  readTVar var >>= A.lookupM index
+  fmap (A.lookup index) (readTVar var)
 
 {-# INLINE null #-}
 null :: TWordArray a -> STM Bool
