@@ -2,6 +2,7 @@ module STM.HAMT.Private.Nodes where
 
 import STM.HAMT.Private.Prelude hiding (insert, lookup, delete, fold, null)
 import qualified STM.HAMT.Private.TWordArray as A
+import qualified STM.HAMT.Private.WordArray as F
 import qualified STM.HAMT.Private.SizedArray1 as B
 import qualified STM.HAMT.Private.Hash as C
 import qualified Focus.Impure as D
@@ -28,32 +29,37 @@ newIO =
 -- |
 -- Returns a flag, specifying, whether the size has been affected.
 insert :: (row -> Bool) -> row -> C.Hash -> Nodes row -> STM Bool
-insert existingRowTest row hash (Nodes nodeArray) =
+insert existingRowTest row hash (Nodes (A.TWordArray var)) =
   {-# SCC "insert" #-}
-  A.focus nodeArrayFocus (C.toIndex hash) nodeArray
+  do
+    nodeArray <- readTVar var
+    case F.lookup index nodeArray of
+      Nothing ->
+        do
+          writeTVar var (F.set index (Node_Rows hash (B.singleton row)) nodeArray)
+          return True
+      Just (Node_Nodes nodes2) ->
+        insert existingRowTest row (C.succLevel hash) nodes2
+      Just (Node_Rows foundHash foundRowArray) ->
+        if foundHash == hash
+          then 
+            case B.find existingRowTest foundRowArray of
+              Just (foundIndex, _) ->
+                do
+                  writeTVar var (F.set index (Node_Rows hash (B.insert foundIndex row foundRowArray)) nodeArray)
+                  return False
+              Nothing ->
+                do
+                  writeTVar var (F.set index (Node_Rows hash (B.append row foundRowArray)) nodeArray)
+                  return True
+          else
+            do
+              nodes2 <- pair (C.succLevel hash) (Node_Rows (C.succLevel hash) (B.singleton row)) (C.succLevel foundHash) (Node_Rows (C.succLevel foundHash) foundRowArray)
+              writeTVar var (F.set index (Node_Nodes nodes2) nodeArray)
+              return True
   where
-    nodeArrayFocus =
-      \case
-        Nothing ->
-          return (True, D.Set (Node_Rows hash (B.singleton row)))
-        Just node ->
-          case node of
-            Node_Nodes nodes2 ->
-              do
-                inserted <- insert existingRowTest row (C.succLevel hash) nodes2
-                return (inserted, D.Keep)
-            Node_Rows foundHash foundRowArray ->
-              if foundHash == hash
-                then
-                  case B.find existingRowTest foundRowArray of
-                    Just (foundIndex, _) ->
-                      return (False, D.Set (Node_Rows hash (B.insert foundIndex row foundRowArray)))
-                    Nothing ->
-                      return (True, D.Set (Node_Rows hash (B.append row foundRowArray)))
-                else
-                  do
-                    nodes2 <- pair (C.succLevel hash) (Node_Rows (C.succLevel hash) (B.singleton row)) (C.succLevel foundHash) (Node_Rows (C.succLevel foundHash) foundRowArray)
-                    return (True, D.Set (Node_Nodes nodes2))
+    index =
+      C.toIndex hash
 
 pair :: Int -> Node row -> Int -> Node row -> STM (Nodes row)
 pair hash1 node1 hash2 node2 =
