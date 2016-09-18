@@ -29,35 +29,31 @@ newIO =
 -- Returns a flag, specifying, whether the size has been affected.
 insert :: (row -> Bool) -> row -> C.Hash -> Nodes row -> STM Bool
 insert existingRowTest row hash (Nodes nodeArray) =
-  {-# SCC "insert" #-} 
-  A.lookup nodeArray index >>=
-  \case
-    Nothing ->
-      do
-        A.insert nodeArray index (Node_Rows hash (B.singleton row))
-        return True
-    Just (Node_Nodes nodes) ->
-      insert existingRowTest row (C.succLevel hash) nodes
-    Just (Node_Rows foundHash foundRowArray) ->
-      if foundHash == hash
-        then 
-          case B.find existingRowTest foundRowArray of
-            Just (foundIndex, _) ->
-              do
-                A.insert nodeArray index (Node_Rows hash (B.insert foundIndex row foundRowArray))
-                return False
-            Nothing ->
-              do
-                A.insert nodeArray index (Node_Rows hash (B.append row foundRowArray))
-                return True
-        else
-          do
-            subNodes <- pair (C.succLevel hash) (Node_Rows (C.succLevel hash) (B.singleton row)) (C.succLevel foundHash) (Node_Rows (C.succLevel foundHash) foundRowArray)
-            A.insert nodeArray index (Node_Nodes subNodes)
-            return True
+  {-# SCC "insert" #-}
+  A.focus nodeArrayFocus (C.toIndex hash) nodeArray
   where
-    index =
-      C.toIndex hash
+    nodeArrayFocus =
+      \case
+        Nothing ->
+          return (True, D.Set (Node_Rows hash (B.singleton row)))
+        Just node ->
+          case node of
+            Node_Nodes nodes2 ->
+              do
+                inserted <- insert existingRowTest row (C.succLevel hash) nodes2
+                return (inserted, D.Keep)
+            Node_Rows foundHash foundRowArray ->
+              if foundHash == hash
+                then
+                  case B.find existingRowTest foundRowArray of
+                    Just (foundIndex, _) ->
+                      return (False, D.Set (Node_Rows hash (B.insert foundIndex row foundRowArray)))
+                    Nothing ->
+                      return (True, D.Set (Node_Rows hash (B.append row foundRowArray)))
+                else
+                  do
+                    nodes2 <- pair (C.succLevel hash) (Node_Rows (C.succLevel hash) (B.singleton row)) (C.succLevel foundHash) (Node_Rows (C.succLevel foundHash) foundRowArray)
+                    return (True, D.Set (Node_Nodes nodes2))
 
 pair :: Int -> Node row -> Int -> Node row -> STM (Nodes row)
 pair hash1 node1 hash2 node2 =
