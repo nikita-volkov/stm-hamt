@@ -43,6 +43,7 @@ singleton i e =
 {-# INLINE pair #-}
 pair :: Int -> e -> Int -> e -> WordArray e
 pair i e i' e' =
+  {-# SCC "pair" #-} 
   WordArray is a
   where 
     is = A.fromList [i, i']
@@ -56,7 +57,7 @@ pair i e i' e' =
           a <- newArray 2 e
           writeArray a 0 e'
           unsafeFreezeArray a
-        | i == i' -> do
+        | otherwise -> do
           a <- newArray 1 e'
           unsafeFreezeArray a
 
@@ -100,7 +101,8 @@ elements (WordArray indices array) =
 -- Set an element value at the index.
 {-# INLINE set #-}
 set :: Int -> e -> WordArray e -> WordArray e
-set i e (WordArray b a) = 
+set i e (WordArray b a) =
+  {-# SCC "set" #-} 
   let 
     sparseIndex = A.position i b
     size = A.size b
@@ -127,6 +129,7 @@ set i e (WordArray b a) =
 {-# INLINE unset #-}
 unset :: Int -> WordArray e -> WordArray e
 unset i (WordArray b a) =
+  {-# SCC "unset" #-} 
   if A.elem i b
     then
       let 
@@ -146,6 +149,7 @@ unset i (WordArray b a) =
 {-# INLINE lookup #-}
 lookup :: Int -> WordArray e -> Maybe e
 lookup i (WordArray b a) =
+  {-# SCC "lookup" #-} 
   if A.elem i b
     then Just (indexArray a (A.position i b))
     else Nothing
@@ -155,6 +159,7 @@ lookup i (WordArray b a) =
 {-# INLINE lookupM #-}
 lookupM :: Monad m => Int -> WordArray e -> m (Maybe e)
 lookupM i (WordArray b a) =
+  {-# SCC "lookupM" #-} 
   if A.elem i b
     then liftM Just (indexArrayM a (A.position i b))
     else return Nothing
@@ -178,6 +183,7 @@ null = A.null . indices
 {-# INLINE focusM #-}
 focusM :: Monad m => B.Focus a m b -> Int -> WordArray a -> m (b, WordArray a)
 focusM focus index wordArray =
+  {-# SCC "focusM" #-} 
   fmap (fmap interpretInstruction) (focus (lookup index wordArray))
   where
     interpretInstruction =

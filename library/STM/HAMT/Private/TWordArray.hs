@@ -29,12 +29,14 @@ singleton index value =
 {-# INLINE pair #-}
 pair :: Int -> a -> Int -> a -> STM (TWordArray a)
 pair index1 value1 index2 value2 =
+  {-# SCC "pair" #-} 
   fmap TWordArray $
   newTVar (A.pair index1 value1 index2 value2)
 
 {-# INLINE insert #-}
 insert :: TWordArray a -> Int -> a -> STM ()
 insert (TWordArray var) index value =
+  {-# SCC "insert" #-} 
   modifyTVar' var (A.set index value)
 
 {-# INLINE lookup #-}
@@ -65,6 +67,7 @@ deleteAll (TWordArray var) =
 {-# INLINE focus #-}
 focus :: B.Focus a STM b -> Int -> TWordArray a -> STM b
 focus focus index (TWordArray var) =
+  {-# SCC "focus" #-} 
   do
     wordArray <- readTVar var
     ((output, modified), newWordArray) <- A.focusM (F.testingIfModifies focus) index wordArray

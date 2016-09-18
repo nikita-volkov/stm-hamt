@@ -45,17 +45,23 @@ null = (== 0) . size
 
 {-# INLINE find #-}
 find :: (a -> Bool) -> SizedArray a -> Maybe (Index, a)
-find p (SizedArray s a) = loop 0
+find p (SizedArray s a) =
+  {-# SCC "find" #-} 
+  recur 0
   where
-    loop i = if i < s
-      then let e = indexArray a i in if p e
-        then Just (i, e)
-        else loop (succ i)
-      else Nothing
+    recur i =
+      if i < s
+        then
+          let e = indexArray a i
+            in if p e
+              then Just (i, e)
+              else recur (succ i)
+        else Nothing
 
 {-# INLINE indexOf #-}
 indexOf :: Eq a => a -> SizedArray a -> Maybe Index
 indexOf value (SizedArray size array) =
+  {-# SCC "indexOf" #-} 
   recur 0
   where
     recur index =
@@ -70,6 +76,7 @@ indexOf value (SizedArray size array) =
 {-# INLINE insert #-}
 insert :: Index -> a -> SizedArray a -> SizedArray a
 insert i e (SizedArray s a) = 
+  {-# SCC "insert" #-} 
   runST $ do
     m' <- newArray s undefined
     forM_ [0 .. pred s] $ \i' -> indexArrayM a i' >>= writeArray m' i'
@@ -78,7 +85,8 @@ insert i e (SizedArray s a) =
 
 {-# INLINE delete #-}
 delete :: Index -> SizedArray a -> SizedArray a
-delete i (SizedArray s a) = 
+delete i (SizedArray s a) =
+  {-# SCC "delete" #-} 
   runST $ do
     m' <- newArray (pred s) undefined
     forM_ [0 .. pred i] $ \i' -> indexArrayM a i' >>= writeArray m' i'
@@ -88,6 +96,7 @@ delete i (SizedArray s a) =
 {-# INLINE append #-}
 append :: a -> SizedArray a -> SizedArray a
 append e (SizedArray s a) =
+  {-# SCC "append" #-} 
   runST $ do
     m' <- newArray (succ s) undefined
     forM_ [0 .. pred s] $ \i -> indexArrayM a i >>= writeArray m' i

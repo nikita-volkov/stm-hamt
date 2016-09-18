@@ -44,6 +44,7 @@ null = (== 0) . size
 {-# INLINE find #-}
 find :: (a -> Bool) -> SizedArray1 a -> Maybe (Int, a)
 find predicate =
+  {-# SCC "find" #-} 
   \case
     One value ->
       if predicate value
@@ -55,6 +56,7 @@ find predicate =
 {-# INLINE indexOf #-}
 indexOf :: Eq a => a -> SizedArray1 a -> Maybe Int
 indexOf value =
+  {-# SCC "indexOf" #-} 
   \case
     One foundValue ->
       if value == foundValue
@@ -68,6 +70,7 @@ indexOf value =
 {-# INLINE insert #-}
 insert :: Int -> a -> SizedArray1 a -> SizedArray1 a
 insert index newValue =
+  {-# SCC "insert" #-} 
   \case
     One _ ->
       One newValue
@@ -77,6 +80,7 @@ insert index newValue =
 {-# INLINE delete #-}
 delete :: Int -> SizedArray1 a -> SizedArray1 a
 delete index =
+  {-# SCC "delete" #-} 
   \case
     Many sizedArray ->
       Many (B.delete index sizedArray)
@@ -86,6 +90,7 @@ delete index =
 {-# INLINE append #-}
 append :: a -> SizedArray1 a -> SizedArray1 a
 append value =
+  {-# SCC "append" #-} 
   \case
     One existingValue ->
       pair existingValue value

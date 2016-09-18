@@ -37,6 +37,7 @@ newIO =
 -- Returns a flag, specifying, whether the size has been affected.
 insert :: Eq row => row -> C.Hash -> Nodes row -> STM Bool
 insert row hash (Nodes nodeArray) =
+  {-# SCC "insert" #-} 
   A.lookup nodeArray index >>=
   \case
     Nothing ->
@@ -68,6 +69,7 @@ insert row hash (Nodes nodeArray) =
 
 pair :: Int -> Node row -> Int -> Node row -> STM (Nodes row)
 pair hash1 node1 hash2 node2 =
+  {-# SCC "pair" #-} 
   fmap Nodes $
   if index1 == index2
     then A.singleton index1 . Node_Nodes =<< pair (C.succLevel hash1) node1 (C.succLevel hash2) node2
@@ -85,6 +87,7 @@ null (Nodes nodeArray) =
 
 focus :: Eq row => D.Focus row STM result -> row -> C.Hash -> Nodes row -> STM result
 focus rowFocus lookupRow lookupHash (Nodes nodeArray) =
+  {-# SCC "focus" #-} 
   A.focus nodeFocus nodeIndex nodeArray
   where
     nodeIndex =
