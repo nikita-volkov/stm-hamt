@@ -2,28 +2,37 @@ module STM.HAMT.Private.WordArray where
 
 import STM.HAMT.Private.Prelude hiding (lookup, toList, traverse_)
 import Data.Primitive.Array
-import qualified STM.HAMT.Private.WordArray.Indices as A
-import qualified Focus.Impure as B
+import qualified STM.HAMT.Private.Prelude as Prelude
+import qualified STM.HAMT.Private.Indices as Indices
+import qualified Focus.Impure
 
 
 -- |
 -- An immutable space-efficient sparse array, 
--- which can store not more than 32 elements.
+-- which can store only as many elements as there are bits in the machine word.
 data WordArray e =
-  WordArray {-# UNPACK #-} !A.Indices {-# UNPACK #-} !(Array e)
+  WordArray {-# UNPACK #-} !Indices {-# UNPACK #-} !(Array e)
 
 instance Foldable WordArray where
   {-# INLINE foldr #-}
   foldr step r (WordArray indices array) =
-    foldr (step . indexArray array) r $ A.positions indices
+    foldr (step . indexArray array) r $ Indices.positions indices
+
+-- | 
+-- A bitmap of set elements.
+type Indices = Indices.Indices
+
+-- |
+-- An index of an element.
+type Index = Int
 
 {-# INLINE indices #-}
-indices :: WordArray e -> A.Indices
+indices :: WordArray e -> Indices
 indices (WordArray b _) = b
 
 {-# INLINE maxSize #-}
 maxSize :: Int
-maxSize = A.maxSize
+maxSize = Indices.maxSize
 
 {-# INLINE empty #-}
 empty :: WordArray e
@@ -34,19 +43,18 @@ empty = WordArray 0 a
 -- |
 -- An array with a single element at the specified index.
 {-# INLINE singleton #-}
-singleton :: Int -> e -> WordArray e
+singleton :: Index -> e -> WordArray e
 singleton i e = 
-  let b = A.insert i 0
+  let b = Indices.insert i 0
       a = runST $ newArray 1 e >>= unsafeFreezeArray
       in WordArray b a
 
 {-# INLINE pair #-}
-pair :: Int -> e -> Int -> e -> WordArray e
+pair :: Index -> e -> Index -> e -> WordArray e
 pair i e i' e' =
-  {-# SCC "pair" #-} 
   WordArray is a
   where 
-    is = A.fromList [i, i']
+    is = Indices.fromList [i, i']
     a = 
       runST $ if 
         | i < i' -> do
@@ -57,7 +65,7 @@ pair i e i' e' =
           a <- newArray 2 e
           writeArray a 0 e'
           unsafeFreezeArray a
-        | otherwise -> do
+        | i == i' -> do
           a <- newArray 1 e'
           unsafeFreezeArray a
 
@@ -65,21 +73,21 @@ pair i e i' e' =
 -- Unsafe.
 -- Assumes that the list is sorted and contains no duplicate indexes.
 {-# INLINE fromList #-}
-fromList :: [(Int, e)] -> WordArray e
+fromList :: [(Index, e)] -> WordArray e
 fromList l = 
   runST $ do
     indices <- newSTRef 0
     array <- newArray (length l) undefined
     forM_ (zip l [0..]) $ \((i, e), ai) -> do
-      modifySTRef indices $ A.insert i
+      modifySTRef indices $ Indices.insert i
       writeArray array ai e
     WordArray <$> readSTRef indices <*> unsafeFreezeArray array
   
 {-# INLINE toList #-}
-toList :: WordArray e -> [(Int, e)]
+toList :: WordArray e -> [(Index, e)]
 toList (WordArray is a) = do
-  i <- A.toList is
-  e <- indexArrayM a (A.position i is)
+  i <- Indices.toList is
+  e <- indexArrayM a (Indices.position i is)
   return (i, e)
 
 -- |
@@ -87,26 +95,25 @@ toList (WordArray is a) = do
 {-# INLINE toMaybeList #-}
 toMaybeList :: WordArray e -> [Maybe e]
 toMaybeList w = do
-  i <- [0 .. pred A.maxSize] 
+  i <- [0 .. pred Indices.maxSize] 
   return $ lookup i w
 
 {-# INLINE elements #-}
 elements :: WordArray e -> [e]
 elements (WordArray indices array) =
-  map (\i -> indexArray array (A.position i indices)) .
-  A.toList $
+  map (\i -> indexArray array (Indices.position i indices)) .
+  Indices.toList $
   indices
 
 -- |
 -- Set an element value at the index.
 {-# INLINE set #-}
-set :: Int -> e -> WordArray e -> WordArray e
-set i e (WordArray b a) =
-  {-# SCC "set" #-} 
+set :: Index -> e -> WordArray e -> WordArray e
+set i e (WordArray b a) = 
   let 
-    sparseIndex = A.position i b
-    size = A.size b
-    in if A.elem i b
+    sparseIndex = Indices.position i b
+    size = Indices.size b
+    in if Indices.elem i b
       then 
         let a' = runST $ do
               ma' <- newArray size undefined
@@ -121,73 +128,71 @@ set i e (WordArray b a) =
               writeArray ma' sparseIndex e
               forM_ [sparseIndex .. (size - 1)] $ \i -> indexArrayM a i >>= writeArray ma' (i + 1)
               unsafeFreezeArray ma'
-            b' = A.insert i b
+            b' = Indices.insert i b
             in WordArray b' a'
 
 -- |
 -- Remove an element.
 {-# INLINE unset #-}
-unset :: Int -> WordArray e -> WordArray e
+unset :: Index -> WordArray e -> WordArray e
 unset i (WordArray b a) =
-  {-# SCC "unset" #-} 
-  if A.elem i b
+  if Indices.elem i b
     then
       let 
-        b' = A.invert i b
+        b' = Indices.invert i b
         a' = runST $ do
           ma' <- newArray (pred size) undefined
           forM_ [0 .. pred sparseIndex] $ \i -> indexArrayM a i >>= writeArray ma' i
           forM_ [succ sparseIndex .. pred size] $ \i -> indexArrayM a i >>= writeArray ma' (pred i)
           unsafeFreezeArray ma'
-        sparseIndex = A.position i b
-        size = A.size b
+        sparseIndex = Indices.position i b
+        size = Indices.size b
         in WordArray b' a'
     else WordArray b a
 
 -- |
 -- Lookup an item at the index.
 {-# INLINE lookup #-}
-lookup :: Int -> WordArray e -> Maybe e
+lookup :: Index -> WordArray e -> Maybe e
 lookup i (WordArray b a) =
-  {-# SCC "lookup" #-} 
-  if A.elem i b
-    then Just (indexArray a (A.position i b))
+  if Indices.elem i b
+    then Just (indexArray a (Indices.position i b))
     else Nothing
 
 -- |
 -- Lookup strictly, using 'indexArrayM'.
 {-# INLINE lookupM #-}
-lookupM :: Monad m => Int -> WordArray e -> m (Maybe e)
+lookupM :: Monad m => Index -> WordArray e -> m (Maybe e)
 lookupM i (WordArray b a) =
-  {-# SCC "lookupM" #-} 
-  if A.elem i b
-    then liftM Just (indexArrayM a (A.position i b))
+  if Indices.elem i b
+    then liftM Just (indexArrayM a (Indices.position i b))
     else return Nothing
 
 -- |
 -- Check, whether there is an element at the index.
 {-# INLINE isSet #-}
-isSet :: Int -> WordArray e -> Bool
-isSet i = A.elem i . indices
+isSet :: Index -> WordArray e -> Bool
+isSet i = Indices.elem i . indices
 
 -- |
 -- Get the amount of elements.
 {-# INLINE size #-}
 size :: WordArray e -> Int
-size = A.size . indices
+size = Indices.size . indices
 
 {-# INLINE null #-}
 null :: WordArray e -> Bool
-null = A.null . indices
+null = Indices.null . indices
 
 {-# INLINE focusM #-}
-focusM :: Monad m => B.Focus a m b -> Int -> WordArray a -> m (b, WordArray a)
-focusM focus index wordArray =
-  {-# SCC "focusM" #-} 
-  fmap (fmap interpretInstruction) (focus (lookup index wordArray))
-  where
-    interpretInstruction =
-      \case
-        B.Keep -> wordArray
-        B.Remove -> unset index wordArray
-        B.Set value -> set index value wordArray
+focusM :: Monad m => Focus.Impure.Focus a m r -> Index -> WordArray a -> m (r, Maybe (WordArray a))
+focusM f i w = do
+  let em = lookup i w
+  (r, c) <- f em
+  let w' = case c of
+        Focus.Impure.Keep -> Nothing
+        Focus.Impure.Remove -> case em of
+          Nothing -> Nothing
+          Just _ -> Just $ unset i w
+        Focus.Impure.Set e' -> Just $ set i e' w
+  return (r, w')

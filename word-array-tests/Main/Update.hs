@@ -44,9 +44,7 @@ instance Arbitrary (Update Char ()) where
 interpretWordArray :: Update e () -> Maybe (WordArray.WordArray e)
 interpretWordArray (Update u) = 
   flip execState Nothing $ flip iterM u $ \case
-    Singleton i e f -> do
-      put $ Just $ WordArray.singleton i e
-      f
+    Singleton i e f -> put (Just (WordArray.singleton i e)) >> f
     Set i e f -> get >>= put . fmap (WordArray.set i e) >> f
     Unset i f -> get >>= put . fmap (WordArray.unset i) >> f
 
@@ -72,5 +70,5 @@ interpretMaybeList (Update u) =
       f
 
 wordSize :: Int
-wordSize = 32
+wordSize = 64
 

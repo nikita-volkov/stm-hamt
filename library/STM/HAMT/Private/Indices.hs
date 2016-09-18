@@ -1,4 +1,4 @@
-module STM.HAMT.Private.WordArray.Indices where
+module STM.HAMT.Private.Indices where
 
 import STM.HAMT.Private.Prelude hiding (toList, traverse_)
 import qualified STM.HAMT.Private.Prelude as Prelude

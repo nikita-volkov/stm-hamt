@@ -1,7 +1,7 @@
 name:
   stm-hamt
 version:
-  0.1
+  0.2
 synopsis:
   STM-specialised Hash Array Mapped Trie
 description:
@@ -44,17 +44,13 @@ library
     library
   other-modules:
     STM.HAMT.Private.Prelude
-    STM.HAMT.Private.WordArray.Indices
+    STM.HAMT.Private.Indices
     STM.HAMT.Private.WordArray
     STM.HAMT.Private.SizedArray
-    STM.HAMT.Private.Hash
+    STM.HAMT.Private.Level
     STM.HAMT.Private.Nodes
-    STM.HAMT.Private.Focuses
-    STM.HAMT.Private.SizedArray1
-    STM.HAMT.Private.TWordArray
   exposed-modules:
     STM.HAMT.Simple
-    STM.HAMT.Sized
   build-depends:
     -- data:
     hashable < 2,
