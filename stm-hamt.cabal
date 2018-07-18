@@ -31,108 +31,43 @@ build-type:
 cabal-version:
   >=1.10
 
-
 source-repository head
   type:
     git
   location:
     git://github.com/nikita-volkov/stm-hamt.git
 
-
 library
   hs-source-dirs:
     library
-  other-modules:
-    STM.HAMT.Private.Prelude
-    STM.HAMT.Private.WordArray.Indices
-    STM.HAMT.Private.WordArray
-    STM.HAMT.Private.SizedArray
-    STM.HAMT.Private.Hash
-    STM.HAMT.Private.Nodes
-    STM.HAMT.Private.Focuses
-    STM.HAMT.Private.SizedArray1
-    STM.HAMT.Private.TWordArray
   exposed-modules:
-    STM.HAMT.Simple
-    STM.HAMT.Sized
-  build-depends:
-    -- data:
-    hashable < 2,
-    -- control:
-    list-t >= 1 && < 2,
-    focus >= 0.8 && < 0.9,
-    transformers >= 0.3 && < 0.6,
-    -- general:
-    primitive >= 0.5 && < 0.7,
-    base-prelude < 2,
-    base < 5
-  default-extensions:
-    Arrows, BangPatterns, ConstraintKinds, DataKinds, DefaultSignatures, DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, EmptyDataDecls, FlexibleContexts, FlexibleInstances, FunctionalDependencies, GADTs, GeneralizedNewtypeDeriving, LambdaCase, LiberalTypeSynonyms, MagicHash, MultiParamTypeClasses, MultiWayIf, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings, PatternGuards, ParallelListComp, QuasiQuotes, RankNTypes, RecordWildCards, ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TupleSections, TypeFamilies, TypeOperators, UnboxedTuples
-  default-language:
-    Haskell2010
-
-
-test-suite word-array-tests
-  type:
-    exitcode-stdio-1.0
-  hs-source-dirs:
-    word-array-tests
-    library
-  main-is:
-    Main.hs
   other-modules:
-    Main.Update
-    STM.HAMT.Private.Prelude
-    STM.HAMT.Private.WordArray
-    STM.HAMT.Private.WordArray.Indices
+    StmHamt.Focuses
+    StmHamt.Prelude
+    StmHamt.Types
+    StmHamt.Instances
+    StmHamt.Stm.Hamt
+    StmHamt.Unfolds.Indices
+    StmHamt.Unfolds.SparseSmallArray
+    StmHamt.Constructors.Branch
+    StmHamt.Constructors.Hash
+    StmHamt.Constructors.Indices
+    StmHamt.Constructors.SmallArray
+    StmHamt.Constructors.SparseSmallArray
+    StmHamt.Accessors.Indices
+    StmHamt.Accessors.Hash
+    StmHamt.Accessors.SmallArray
+    StmHamt.Accessors.SparseSmallArray
   build-depends:
-    -- testing:
-    free >= 4.6 && < 6,
-    mtl == 2.*,
-    QuickCheck >= 2.6 && < 3,
-    HTF == 0.13.*,
-    -- data:
-    hashable,
-    -- control:
-    list-t,
-    focus,
-    transformers,
-    -- debugging:
-    loch-th == 0.2.*,
-    placeholders == 0.1.*,
-    -- general:
-    primitive,
-    mtl-prelude < 3,
-    base-prelude,
-    base
+    base >=4.6 && <5,
+    deferred-folds >=0.6.1 && <0.7,
+    focus >=0.11.2 && <0.12,
+    hashable <2,
+    list-t >=1 && <2,
+    primitive >=0.6.4 && <0.7,
+    primitive-extras >=0.3.0.1 && <0.4,
+    transformers >=0.3 && <0.6
   default-extensions:
     Arrows, BangPatterns, ConstraintKinds, DataKinds, DefaultSignatures, DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, EmptyDataDecls, FlexibleContexts, FlexibleInstances, FunctionalDependencies, GADTs, GeneralizedNewtypeDeriving, LambdaCase, LiberalTypeSynonyms, MagicHash, MultiParamTypeClasses, MultiWayIf, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings, PatternGuards, ParallelListComp, QuasiQuotes, RankNTypes, RecordWildCards, ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TupleSections, TypeFamilies, TypeOperators, UnboxedTuples
   default-language:
     Haskell2010
-
-
-benchmark concurrent-insertion-bench
-  type:
-    exitcode-stdio-1.0
-  hs-source-dirs:
-    concurrent-insertion-bench
-  main-is:
-    Main.hs
-  ghc-options:
-    -O2 -threaded "-with-rtsopts=-N"
-  default-extensions:
-    Arrows, BangPatterns, ConstraintKinds, DataKinds, DefaultSignatures, DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, EmptyDataDecls, FlexibleContexts, FlexibleInstances, FunctionalDependencies, GADTs, GeneralizedNewtypeDeriving, LambdaCase, LiberalTypeSynonyms, MagicHash, MultiParamTypeClasses, MultiWayIf, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings, PatternGuards, ParallelListComp, QuasiQuotes, RankNTypes, RecordWildCards, ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TupleSections, TypeFamilies, TypeOperators, UnboxedTuples
-  default-language:
-    Haskell2010
-  build-depends:
-    criterion == 1.5.*,
-    mwc-random == 0.14.*,
-    mwc-random-monad == 0.7.*,
-    -- data:
-    list-t,
-    focus,
-    stm-hamt,
-    -- general:
-    free >= 4.5 && < 6,
-    async >= 2.0 && < 3,
-    rebase < 2
