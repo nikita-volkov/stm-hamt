@@ -6,6 +6,7 @@ module StmHamt.Hamt
   null,
   focus,
   insert,
+  lookup,
   reset,
   unfoldM,
 )
@@ -91,6 +92,27 @@ insertExplicitly hash test element (Hamt var) =
                 writeTVar var $! SparseSmallArrayConstructors.replace index (BranchesBranch hamt) branchArray
                 return True
           BranchesBranch hamt -> insertExplicitly (HashConstructors.succLevel hash) test element hamt
+
+{-|
+Returns a flag, specifying, whether the size has been affected.
+-}
+lookup :: (Eq element, Eq key, Hashable key) => (element -> key) -> key -> Hamt element -> STM (Maybe element)
+lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
+
+lookupExplicitly :: Eq a => Hash -> (a -> Bool) -> Hamt a -> STM (Maybe a)
+lookupExplicitly hash test (Hamt var) =
+  {-# SCC "lookupExplicitly" #-} 
+  let
+    !index = HashAccessors.index hash
+    in do
+      branchArray <- readTVar var
+      case SparseSmallArrayAccessors.lookup index branchArray of
+        Just branch -> case branch of
+          LeavesBranch leavesHash leavesArray -> if leavesHash == hash
+            then return (SmallArrayAccessors.find test leavesArray)
+            else return Nothing
+          BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test (Hamt var)
+        Nothing -> return Nothing
 
 reset :: Hamt a -> STM ()
 reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArrayConstructors.empty

@@ -11,6 +11,7 @@ module StmHamt.SizedHamt
   size,
   focus,
   insert,
+  lookup,
   reset,
   unfoldM,
 )
@@ -61,10 +62,14 @@ focus focus elementToKey key (SizedHamt hamt sizeVar) =
 
 {-# INLINE insert #-}
 insert :: (Eq element, Eq key, Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
-insert elementToKey element (SizedHamt nodes sizeVar) =
+insert elementToKey element (SizedHamt hamt sizeVar) =
   do
-    inserted <- Hamt.insert elementToKey element nodes
+    inserted <- Hamt.insert elementToKey element hamt
     when inserted (modifyTVar' sizeVar succ)
+
+{-# INLINE lookup #-}
+lookup :: (Eq element, Eq key, Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
+lookup elementToKey key (SizedHamt hamt _) = Hamt.lookup elementToKey key hamt
 
 {-# INLINE unfoldM #-}
 unfoldM :: SizedHamt a -> UnfoldM STM a

@@ -4,12 +4,27 @@ import StmHamt.Prelude
 import StmHamt.Types
 
 
+{-# INLINE find #-}
+find :: (a -> Bool) -> SmallArray a -> Maybe a
+find test array =
+  {-# SCC "find" #-} 
+  let
+    !size = sizeofSmallArray array
+    iterate index = if index < size
+      then let
+        element = indexSmallArray array index
+        in if test element
+          then Just element
+          else iterate (succ index)
+      else Nothing
+    in iterate 0
+
 {-# INLINE findWithIndex #-}
 findWithIndex :: (a -> Bool) -> SmallArray a -> Maybe (Int, a)
 findWithIndex test array =
   {-# SCC "findWithIndex" #-} 
   let
-    size = sizeofSmallArray array
+    !size = sizeofSmallArray array
     iterate index = if index < size
       then let
         element = indexSmallArray array index
