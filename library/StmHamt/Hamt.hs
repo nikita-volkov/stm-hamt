@@ -1,12 +1,16 @@
 module StmHamt.Hamt
 (
   Hamt,
+  Hash,
   new,
   newIO,
   null,
   focus,
+  focusExplicitly,
   insert,
+  insertExplicitly,
   lookup,
+  lookupExplicitly,
   reset,
   unfoldM,
 )
