@@ -54,7 +54,7 @@ library
     StmHamt.Focuses
     StmHamt.Instances
     StmHamt.Prelude
-    StmHamt.Stm.Hamt
+    StmHamt.Hamt
     StmHamt.Types
     StmHamt.UnfoldMs
     StmHamt.UnfoldMs.SmallArray

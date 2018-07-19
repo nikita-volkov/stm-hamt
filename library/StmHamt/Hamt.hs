@@ -1,4 +1,4 @@
-module StmHamt.Stm.Hamt where
+module StmHamt.Hamt where
 
 import StmHamt.Prelude hiding (empty, insert, update, lookup, delete)
 import StmHamt.Types
