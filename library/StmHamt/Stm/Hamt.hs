@@ -25,7 +25,7 @@ pair hash1 branch1 hash2 branch2 =
       then pair (HashConstructors.succLevel hash1) branch1 (HashConstructors.succLevel hash2) branch2
       else Hamt <$> newTVar (SparseSmallArrayConstructors.pair index1 branch1 index2 branch2)
 
-focus :: Focus a STM b -> Hash -> (a -> Bool) -> Hamt a -> STM b
+focus :: Eq a => Focus a STM b -> Hash -> (a -> Bool) -> Hamt a -> STM b
 focus focus hash test hamt =
   {-# SCC "focus" #-} 
   let
@@ -34,7 +34,7 @@ focus focus hash test hamt =
 
 -- |
 -- Returns a flag, specifying, whether the size has been affected.
-insert :: Hash -> (a -> Bool) -> a -> Hamt a -> STM Bool
+insert :: Eq a => Hash -> (a -> Bool) -> a -> Hamt a -> STM Bool
 insert hash test element (Hamt var) =
   {-# SCC "insert" #-} 
   let
@@ -48,9 +48,11 @@ insert hash test element (Hamt var) =
         Just branch -> case branch of
           LeavesBranch leavesHash leavesArray -> if leavesHash == hash
             then case SmallArrayAccessors.findWithIndex test leavesArray of
-              Just (leavesIndex, _) -> do
-                writeTVar var $! SparseSmallArrayConstructors.replace index (LeavesBranch hash (SmallArrayConstructors.set leavesIndex element leavesArray)) branchArray
-                return False
+              Just (leavesIndex, leavesElement) -> if element == leavesElement
+                then return False
+                else do
+                  writeTVar var $! SparseSmallArrayConstructors.replace index (LeavesBranch hash (SmallArrayConstructors.set leavesIndex element leavesArray)) branchArray
+                  return False
               Nothing -> do
                 writeTVar var $! SparseSmallArrayConstructors.replace index (LeavesBranch hash (SmallArrayConstructors.cons element leavesArray)) branchArray
                 return True

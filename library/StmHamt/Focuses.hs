@@ -48,7 +48,7 @@ onSparseSmallArrayElement index (Focus concealA revealA) = Focus concealSsa reve
               newArray = SmallArrayConstructors.unset index array
               in Set (SparseSmallArray newIndices newArray)
 
-onFoundSmallArrayElement :: Monad m => (a -> Bool) -> Focus a m b -> Focus (SmallArray a) m b
+onFoundSmallArrayElement :: (Monad m, Eq a) => (a -> Bool) -> Focus a m b -> Focus (SmallArray a) m b
 onFoundSmallArrayElement testA (Focus concealA revealA) = Focus concealArray revealArray where
   concealArray = fmap (fmap arrayChange) concealA where
     arrayChange = \ case
@@ -58,7 +58,9 @@ onFoundSmallArrayElement testA (Focus concealA revealA) = Focus concealArray rev
     Just (index, value) -> fmap (fmap arrayChange) (revealA value) where
       arrayChange = \ case
         Leave -> Leave
-        Set newValue -> Set (SmallArrayConstructors.set index newValue array)
+        Set newValue -> if newValue == value
+          then Leave
+          else Set (SmallArrayConstructors.set index newValue array)
         Remove -> if sizeofSmallArray array > 1
           then Set (SmallArrayConstructors.unset index array)
           else Remove
@@ -67,7 +69,7 @@ onFoundSmallArrayElement testA (Focus concealA revealA) = Focus concealArray rev
         Set newValue -> Set (SmallArrayConstructors.cons newValue array)
         _ -> Leave
 
-onBranchElement :: forall a b. Hash -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
+onBranchElement :: forall a b. Eq a => Hash -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
 onBranchElement hash testA aFocus@(Focus concealA revealA) =
   let
     Focus concealLeaves revealLeaves = onFoundSmallArrayElement testA aFocus
@@ -92,7 +94,7 @@ onBranchElement hash testA aFocus@(Focus concealA revealA) =
         BranchesBranch (Hamt var) -> fmap (fmap (fmap (BranchesBranch . Hamt))) (revealBranchesVar var)
     in branchFocus hash
 
-onHamtElement :: Hash -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
+onHamtElement :: Eq a => Hash -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
 onHamtElement hash test =
   let
     ssaIndex = HashAccessors.index hash
