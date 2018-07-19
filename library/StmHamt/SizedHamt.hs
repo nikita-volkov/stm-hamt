@@ -53,22 +53,18 @@ reset (SizedHamt hamt sizeVar) =
 focus :: (Eq element, Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> SizedHamt element -> STM result
 focus focus elementToKey key (SizedHamt hamt sizeVar) =
   do
-    (result, sizeModifier) <- Hamt.focus newFocus (hash key) elementTest hamt
+    (result, sizeModifier) <- Hamt.focus newFocus elementToKey key hamt
     forM_ sizeModifier (modifyTVar' sizeVar)
     return result
   where
     newFocus = Focus.testingSizeChange (Just pred) Nothing (Just succ) focus
-    elementTest = (==) key . elementToKey
 
 {-# INLINE insert #-}
 insert :: (Eq element, Eq key, Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
 insert elementToKey element (SizedHamt nodes sizeVar) =
   do
-    inserted <- Hamt.insert (hash key) elementTest element nodes
+    inserted <- Hamt.insert elementToKey element nodes
     when inserted (modifyTVar' sizeVar succ)
-  where
-    elementTest = (==) key . elementToKey
-    key = elementToKey element
 
 {-# INLINE unfoldM #-}
 unfoldM :: SizedHamt a -> UnfoldM STM a

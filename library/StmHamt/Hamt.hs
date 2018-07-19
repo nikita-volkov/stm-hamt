@@ -40,20 +40,32 @@ pair hash1 branch1 hash2 branch2 =
       then pair (HashConstructors.succLevel hash1) branch1 (HashConstructors.succLevel hash2) branch2
       else Hamt <$> newTVar (SparseSmallArrayConstructors.pair index1 branch1 index2 branch2)
 
-focus :: Eq a => Focus a STM b -> Hash -> (a -> Bool) -> Hamt a -> STM b
-focus focus hash test hamt =
+focus :: (Eq element, Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
+focus focus elementToKey key = focusExplicitly focus (hash key) ((==) key . elementToKey)
+
+focusExplicitly :: Eq a => Focus a STM b -> Hash -> (a -> Bool) -> Hamt a -> STM b
+focusExplicitly focus hash test hamt =
   {-# SCC "focus" #-} 
   let
     Focus conceal reveal = Focuses.onHamtElement hash test focus
     in fmap fst (reveal hamt)
 
--- |
--- Returns a flag, specifying, whether the size has been affected.
-insert :: Eq a => Hash -> (a -> Bool) -> a -> Hamt a -> STM Bool
-insert hash test element (Hamt var) =
-  {-# SCC "insert" #-} 
+{-|
+Returns a flag, specifying, whether the size has been affected.
+-}
+insert :: (Eq element, Eq key, Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
+insert elementToKey element = let
+  !key = elementToKey element
+  in insertExplicitly (hash key) ((==) key . elementToKey) element
+
+{-|
+Returns a flag, specifying, whether the size has been affected.
+-}
+insertExplicitly :: Eq a => Hash -> (a -> Bool) -> a -> Hamt a -> STM Bool
+insertExplicitly hash test element (Hamt var) =
+  {-# SCC "insertExplicitly" #-} 
   let
-    index = HashAccessors.index hash
+    !index = HashAccessors.index hash
     in do
       branchArray <- readTVar var
       case SparseSmallArrayAccessors.lookup index branchArray of
@@ -78,7 +90,7 @@ insert hash test element (Hamt var) =
                 hamt <- pair nextHash (LeavesBranch nextHash (pure element)) nextLeavesHash (LeavesBranch nextLeavesHash leavesArray)
                 writeTVar var $! SparseSmallArrayConstructors.replace index (BranchesBranch hamt) branchArray
                 return True
-          BranchesBranch hamt -> insert (HashConstructors.succLevel hash) test element hamt
+          BranchesBranch hamt -> insertExplicitly (HashConstructors.succLevel hash) test element hamt
 
 reset :: Hamt a -> STM ()
 reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArrayConstructors.empty
