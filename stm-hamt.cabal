@@ -42,25 +42,25 @@ library
     library
   exposed-modules:
   other-modules:
-    StmHamt.Focuses
-    StmHamt.Prelude
-    StmHamt.Types
-    StmHamt.Instances
-    StmHamt.Stm.Hamt
-    StmHamt.Unfolds.Indices
-    StmHamt.Unfolds.SparseSmallArray
-    StmHamt.UnfoldMs
-    StmHamt.UnfoldMs.SparseSmallArray
-    StmHamt.UnfoldMs.SmallArray
+    StmHamt.Accessors.Hash
+    StmHamt.Accessors.Indices
+    StmHamt.Accessors.SmallArray
+    StmHamt.Accessors.SparseSmallArray
     StmHamt.Constructors.Branch
     StmHamt.Constructors.Hash
     StmHamt.Constructors.Indices
     StmHamt.Constructors.SmallArray
     StmHamt.Constructors.SparseSmallArray
-    StmHamt.Accessors.Indices
-    StmHamt.Accessors.Hash
-    StmHamt.Accessors.SmallArray
-    StmHamt.Accessors.SparseSmallArray
+    StmHamt.Focuses
+    StmHamt.Instances
+    StmHamt.Prelude
+    StmHamt.Stm.Hamt
+    StmHamt.Types
+    StmHamt.UnfoldMs
+    StmHamt.UnfoldMs.SmallArray
+    StmHamt.UnfoldMs.SparseSmallArray
+    StmHamt.Unfolds.Indices
+    StmHamt.Unfolds.SparseSmallArray
   build-depends:
     base >=4.6 && <5,
     deferred-folds >=0.6.2 && <0.7,
