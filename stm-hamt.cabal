@@ -41,6 +41,8 @@ library
   hs-source-dirs:
     library
   exposed-modules:
+    StmHamt.Hamt
+    StmHamt.SizedHamt
   other-modules:
     StmHamt.Accessors.Hash
     StmHamt.Accessors.Indices
@@ -54,7 +56,6 @@ library
     StmHamt.Focuses
     StmHamt.Instances
     StmHamt.Prelude
-    StmHamt.Hamt
     StmHamt.Types
     StmHamt.UnfoldMs
     StmHamt.UnfoldMs.SmallArray

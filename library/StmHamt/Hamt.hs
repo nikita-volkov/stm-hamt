@@ -1,4 +1,15 @@
-module StmHamt.Hamt where
+module StmHamt.Hamt
+(
+  Hamt,
+  new,
+  newIO,
+  null,
+  focus,
+  insert,
+  reset,
+  unfoldM,
+)
+where
 
 import StmHamt.Prelude hiding (empty, insert, update, lookup, delete)
 import StmHamt.Types
@@ -10,10 +21,14 @@ import qualified StmHamt.Constructors.Hash as HashConstructors
 import qualified StmHamt.Accessors.Hash as HashAccessors
 import qualified StmHamt.Accessors.SparseSmallArray as SparseSmallArrayAccessors
 import qualified StmHamt.Accessors.SmallArray as SmallArrayAccessors
+import qualified StmHamt.UnfoldMs as UnfoldMs
 
 
-empty :: STM (Hamt a)
-empty = Hamt <$> newTVar SparseSmallArrayConstructors.empty
+new :: STM (Hamt a)
+new = Hamt <$> newTVar SparseSmallArrayConstructors.empty
+
+newIO :: IO (Hamt a)
+newIO = Hamt <$> newTVarIO SparseSmallArrayConstructors.empty
 
 pair :: Hash -> Branch a -> Hash -> Branch a -> STM (Hamt a)
 pair hash1 branch1 hash2 branch2 =
@@ -64,3 +79,9 @@ insert hash test element (Hamt var) =
                 writeTVar var $! SparseSmallArrayConstructors.replace index (BranchesBranch hamt) branchArray
                 return True
           BranchesBranch hamt -> insert (HashConstructors.succLevel hash) test element hamt
+
+reset :: Hamt a -> STM ()
+reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArrayConstructors.empty
+
+unfoldM :: Hamt a -> UnfoldM STM a
+unfoldM = UnfoldMs.hamtElements
