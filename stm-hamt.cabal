@@ -49,6 +49,9 @@ library
     StmHamt.Stm.Hamt
     StmHamt.Unfolds.Indices
     StmHamt.Unfolds.SparseSmallArray
+    StmHamt.UnfoldMs
+    StmHamt.UnfoldMs.SparseSmallArray
+    StmHamt.UnfoldMs.SmallArray
     StmHamt.Constructors.Branch
     StmHamt.Constructors.Hash
     StmHamt.Constructors.Indices
@@ -60,7 +63,7 @@ library
     StmHamt.Accessors.SparseSmallArray
   build-depends:
     base >=4.6 && <5,
-    deferred-folds >=0.6.1 && <0.7,
+    deferred-folds >=0.6.2 && <0.7,
     focus >=0.11.2 && <0.12,
     hashable <2,
     list-t >=1 && <2,
