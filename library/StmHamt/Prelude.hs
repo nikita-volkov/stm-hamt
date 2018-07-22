@@ -92,6 +92,10 @@ import Focus as Exports (Focus(..))
 -------------------------
 import Data.Primitive as Exports
 
+-- primitive-extras
+-------------------------
+import PrimitiveExtras.SparseSmallArray as Exports (SparseSmallArray)
+
 -- deferred-folds
 -------------------------
 import DeferredFolds.Unfold as Exports (Unfold(..))

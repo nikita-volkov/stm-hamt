@@ -5,7 +5,7 @@ import StmHamt.Types
 
 
 {-# INLINE index #-}
-index :: Hash -> Int
+index :: Int -> Int
 index hash = mask .&. hash
 
 {-# INLINE step #-}

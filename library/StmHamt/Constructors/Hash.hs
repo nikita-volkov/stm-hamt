@@ -6,5 +6,5 @@ import qualified StmHamt.Accessors.Hash as HashAccessors
 
 
 {-# INLINE succLevel #-}
-succLevel :: Hash -> Hash
+succLevel :: Int -> Int
 succLevel hash = unsafeShiftR hash HashAccessors.step

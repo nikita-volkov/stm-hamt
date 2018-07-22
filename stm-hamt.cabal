@@ -45,23 +45,12 @@ library
     StmHamt.SizedHamt
   other-modules:
     StmHamt.Accessors.Hash
-    StmHamt.Accessors.Indices
-    StmHamt.Accessors.SmallArray
-    StmHamt.Accessors.SparseSmallArray
     StmHamt.Constructors.Branch
     StmHamt.Constructors.Hash
-    StmHamt.Constructors.Indices
-    StmHamt.Constructors.SmallArray
-    StmHamt.Constructors.SparseSmallArray
     StmHamt.Focuses
-    StmHamt.Instances
     StmHamt.Prelude
     StmHamt.Types
     StmHamt.UnfoldMs
-    StmHamt.UnfoldMs.SmallArray
-    StmHamt.UnfoldMs.SparseSmallArray
-    StmHamt.Unfolds.Indices
-    StmHamt.Unfolds.SparseSmallArray
   build-depends:
     base >=4.6 && <5,
     deferred-folds >=0.6.2 && <0.7,
@@ -69,7 +58,7 @@ library
     hashable <2,
     list-t >=1 && <2,
     primitive >=0.6.4 && <0.7,
-    primitive-extras >=0.3.0.1 && <0.4,
+    primitive-extras >=0.4.1 && <0.5,
     transformers >=0.3 && <0.6
   default-extensions:
     Arrows, BangPatterns, ConstraintKinds, DataKinds, DefaultSignatures, DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, EmptyDataDecls, FlexibleContexts, FlexibleInstances, FunctionalDependencies, GADTs, GeneralizedNewtypeDeriving, LambdaCase, LiberalTypeSynonyms, MagicHash, MultiParamTypeClasses, MultiWayIf, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings, PatternGuards, ParallelListComp, QuasiQuotes, RankNTypes, RecordWildCards, ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TupleSections, TypeFamilies, TypeOperators, UnboxedTuples
