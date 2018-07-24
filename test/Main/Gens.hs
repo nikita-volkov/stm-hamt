@@ -1,6 +1,6 @@
 module Main.Gens where
 
-import Prelude hiding (choose, hash)
+import Prelude hiding (choose)
 import Test.QuickCheck.Gen
 import StmHamt.Hamt (Hamt)
 import Focus (Focus(..))
@@ -19,9 +19,6 @@ key = do
 value :: Gen Int
 value = choose (0, 9)
 
-hash :: Gen Int
-hash = choose (0, 9)
-
 lookupTransaction :: Gen Transaction
 lookupTransaction = Transaction.lookup <$> key
 
@@ -29,7 +26,11 @@ insertTransaction :: Gen Transaction
 insertTransaction = Transaction.insert <$> key <*> value
 
 insertWithHashTransaction :: Gen Transaction
-insertWithHashTransaction = Transaction.insertWithHash <$> hash <*> key <*> value
+insertWithHashTransaction = do
+  keyValue <- key
+  valueValue <- value
+  let hashValue = hash keyValue .&. 0b111
+  return (Transaction.insertWithHash hashValue keyValue valueValue)
 
 insertUsingFocusTransaction :: Gen Transaction
 insertUsingFocusTransaction = Transaction.insertUsingFocus <$> key <*> value
