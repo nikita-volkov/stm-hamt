@@ -12,7 +12,7 @@ import qualified Main.Transaction as Transaction
 
 key :: Gen Text
 key = do
-  length <- choose (0, 3)
+  length <- frequency [(1, pure 0), (10, choose (1, 3))]
   chars <- vectorOf length (choose ('a', 'd'))
   return (fromString chars)
 
@@ -40,6 +40,9 @@ deleteUsingFocusTransaction = Transaction.deleteUsingFocus <$> key
 incrementUsingAdjustFocusTransaction :: Gen Transaction
 incrementUsingAdjustFocusTransaction = Transaction.incrementUsingAdjustFocus <$> key
 
+seriesOfModificationsTransaction :: Gen Transaction
+seriesOfModificationsTransaction = undefined
+
 transaction :: Gen Transaction
 transaction =
   frequency
@@ -62,5 +65,5 @@ hamt = do
 
 keyValueList :: Gen [(Text, Int)]
 keyValueList = do
-  size <- choose (0, 99)
+  size <- choose (0, 9)
   replicateM size ((,) <$> key <*> value)
