@@ -86,6 +86,14 @@ main =
           ,
           testTransactionProperty "insert" Gens.insertTransaction
           ,
-          testTransactionProperty "insert" Gens.insertTransaction
+          testTransactionProperty "insertWithHash" Gens.insertWithHashTransaction
+          ,
+          testTransactionProperty "insertUsingFocus" Gens.insertUsingFocusTransaction
+          ,
+          testTransactionProperty "deleteUsingFocus" Gens.deleteUsingFocusTransaction
+          ,
+          testTransactionProperty "incrementUsingAdjustFocus" Gens.incrementUsingAdjustFocusTransaction
+          ,
+          testTransactionProperty "lookup" Gens.lookupTransaction
         ]
   ]
