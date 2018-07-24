@@ -9,6 +9,7 @@ import Test.QuickCheck.Instances
 import Test.QuickCheck
 import Test.QuickCheck.Property hiding (testCase)
 import StmHamt.Hamt (Hamt)
+import Main.Transaction (Transaction)
 import qualified Main.Transaction as Transaction
 import qualified Main.Gens as Gens
 import qualified StmHamt.Hamt as Hamt
@@ -22,18 +23,36 @@ main =
   testGroup "All" $
   [
     testGroup "Hamt" $ let
+
       hamtFromListUsingInsertInIo :: (Eq key, Hashable key, Eq value) => [(key, value)] -> IO (Hamt (key, value))
       hamtFromListUsingInsertInIo list = do
         hamt <- Hamt.newIO
         atomically $ forM_ list $ \ pair -> Hamt.insert fst pair hamt
         return hamt
+
       hamtToListInIo :: Hamt a -> IO [a]
       hamtToListInIo hamt =
         fmap reverse $
         atomically $
         UnfoldM.foldlM' (\ state element -> return (element : state)) [] (Hamt.unfoldM hamt)
+
       listToListThruHamtInIo :: [(Char, Int)] -> IO [(Char, Int)]
       listToListThruHamtInIo = hamtFromListUsingInsertInIo >=> hamtToListInIo
+
+      testTransactionProperty :: String -> Gen Transaction -> TestTree
+      testTransactionProperty name transactionGen =
+        let
+          gen = (,) <$> transactionGen <*> Gens.keyValueList
+          in
+            testProperty ("Transaction: " <> name) $
+            forAll gen $ \ (Transaction.Transaction name applyToHashMap applyToStmHamt, list) -> let
+              hashMapList = HashMap.toList (snd (applyToHashMap (HashMap.fromList list)))
+              hamtList = unsafePerformIO $ do
+                hamt <- hamtFromListUsingInsertInIo list
+                atomically $ applyToStmHamt hamt
+                hamtToListInIo hamt
+              in sort hashMapList === sort hamtList
+
       in
         [
           testCase "insert" $ let
@@ -61,13 +80,6 @@ main =
               hamtList <- listToListThruHamtInIo list
               assertEqual (show hamtList) (delete ('b', 1) list) hamtList
           ,
-          testProperty "insert" $ forAll Gens.insertTransaction $ \ (Transaction.Transaction name applyToHashMap applyToStmHamt) -> let
-            list = [("a", 1), ("b", 2)]
-            hashMapList = HashMap.toList (snd (applyToHashMap (HashMap.fromList list)))
-            hamtList = unsafePerformIO $ do
-              hamt <- hamtFromListUsingInsertInIo list
-              atomically $ applyToStmHamt hamt
-              hamtToListInIo hamt
-            in sort hashMapList === sort hamtList
+          testTransactionProperty "insert" Gens.insertTransaction
         ]
   ]

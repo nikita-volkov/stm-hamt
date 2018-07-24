@@ -54,9 +54,13 @@ transaction =
 
 hamt :: Gen (STM (Hamt (Text, Int)))
 hamt = do
-  size <- choose (0, 9)
-  list <- replicateM size ((,) <$> key <*> value)
+  list <- keyValueList
   return $ do
     hamt <- StmHamt.new
     forM_ list $ \ pair -> StmHamt.insert fst pair hamt
     return hamt
+
+keyValueList :: Gen [(Text, Int)]
+keyValueList = do
+  size <- choose (0, 99)
+  replicateM size ((,) <$> key <*> value)
