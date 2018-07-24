@@ -46,12 +46,16 @@ main =
           in
             testProperty ("Transaction: " <> name) $
             forAll gen $ \ (Transaction.Transaction name applyToHashMap applyToStmHamt, list) -> let
-              hashMapList = HashMap.toList (snd (applyToHashMap (HashMap.fromList list)))
-              hamtList = unsafePerformIO $ do
+              (result1, hashMapList) = fmap HashMap.toList (applyToHashMap (HashMap.fromList list))
+              (result2, hamtList) = unsafePerformIO $ do
                 hamt <- hamtFromListUsingInsertInIo list
-                atomically $ applyToStmHamt hamt
-                hamtToListInIo hamt
-              in sort hashMapList === sort hamtList
+                result2 <- atomically $ applyToStmHamt hamt
+                list <- hamtToListInIo hamt
+                return (result2, list)
+              in
+                counterexample
+                  ("hashMapList: " <> show hashMapList <> "\nhamtList: " <> show hamtList <> "\nresult1: " <> show result1 <> "\nresult2: " <> show result2)
+                  (sort hashMapList == sort hamtList && result1 == result2)
 
       in
         [
@@ -79,6 +83,8 @@ main =
             in do
               hamtList <- listToListThruHamtInIo list
               assertEqual (show hamtList) (delete ('b', 1) list) hamtList
+          ,
+          testTransactionProperty "insert" Gens.insertTransaction
           ,
           testTransactionProperty "insert" Gens.insertTransaction
         ]
