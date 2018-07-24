@@ -46,16 +46,16 @@ main =
           in
             testProperty ("Transaction: " <> name) $
             forAll gen $ \ (Transaction.Transaction name applyToHashMap applyToStmHamt, list) -> let
-              (result1, hashMapList) = fmap HashMap.toList (applyToHashMap (HashMap.fromList list))
+              (result1, hashMapList) = fmap (sort . HashMap.toList) (applyToHashMap (HashMap.fromList list))
               (result2, hamtList) = unsafePerformIO $ do
                 hamt <- hamtFromListUsingInsertInIo list
                 result2 <- atomically $ applyToStmHamt hamt
                 list <- hamtToListInIo hamt
-                return (result2, list)
+                return (result2, sort list)
               in
                 counterexample
                   ("hashMapList: " <> show hashMapList <> "\nhamtList: " <> show hamtList <> "\nresult1: " <> show result1 <> "\nresult2: " <> show result2)
-                  (sort hashMapList == sort hamtList && result1 == result2)
+                  (hashMapList == hamtList && result1 == result2)
 
       in
         [
