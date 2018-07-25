@@ -13,14 +13,14 @@ import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
 import qualified PrimitiveExtras.SmallArray as SmallArray
 
 
-onBranchElement :: forall a b. Eq a => Int -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
+onBranchElement :: forall a b. Int -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
 onBranchElement hash testA aFocus@(Focus concealA revealA) =
   let
-    Focus concealLeaves revealLeaves = SmallArray.onFoundElementFocus testA aFocus
+    Focus concealLeaves revealLeaves = SmallArray.onFoundElementWithoutEqFocus testA aFocus
     branchesFocus :: Int -> Focus (TVar (SparseSmallArray (Branch a))) STM b
     branchesFocus hash = let
-      ssaIndex = HashAccessors.index hash
-      in onTVarValue (SparseSmallArray.onElementAtFocus ssaIndex (branchFocus hash))
+      branchIndex = HashAccessors.index hash
+      in onTVarValue (SparseSmallArray.onElementAtFocus branchIndex (branchFocus hash))
     branchFocus :: Int -> Focus (Branch a) STM b
     branchFocus hash = Focus concealBranch revealBranch where
       Focus concealBranchesVar revealBranchesVar = branchesFocus (HashConstructors.succLevel hash)
@@ -38,12 +38,12 @@ onBranchElement hash testA aFocus@(Focus concealA revealA) =
         BranchesBranch (Hamt var) -> fmap (fmap (fmap (BranchesBranch . Hamt))) (revealBranchesVar var)
     in branchFocus hash
 
-onHamtElement :: Eq a => Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
+onHamtElement :: Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
 onHamtElement hash test =
   let
-    ssaIndex = HashAccessors.index hash
+    branchIndex = HashAccessors.index hash
     in
       mappingInput Hamt (\ (Hamt x) -> x) .
       onTVarValue .
-      SparseSmallArray.onElementAtFocus ssaIndex .
+      SparseSmallArray.onElementAtFocus branchIndex .
       onBranchElement hash test
