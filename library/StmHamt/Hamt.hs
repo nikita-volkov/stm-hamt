@@ -64,35 +64,38 @@ insert elementToKey element = let
 Returns a flag, specifying, whether the size has been affected.
 -}
 insertExplicitly :: Eq a => Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
-insertExplicitly hash test element (Hamt var) =
+insertExplicitly hash testKey element (Hamt var) =
   {-# SCC "insertExplicitly" #-} 
   let
-    !index = HashAccessors.index hash
+    !branchIndex = HashAccessors.index hash
     in do
       branchArray <- readTVar var
-      case SparseSmallArray.lookup index branchArray of
+      case SparseSmallArray.lookup branchIndex branchArray of
         Nothing -> do
-          writeTVar var $! SparseSmallArray.insert index (LeavesBranch hash (pure element)) branchArray
+          writeTVar var $! SparseSmallArray.insert branchIndex (LeavesBranch hash (pure element)) branchArray
           return True
         Just branch -> case branch of
           LeavesBranch leavesHash leavesArray -> if leavesHash == hash
-            then case SmallArray.findWithIndex test leavesArray of
-              Just (leavesIndex, leavesElement) -> if element == leavesElement
-                then return False
-                else do
-                  writeTVar var $! SparseSmallArray.replace index (LeavesBranch hash (SmallArray.set leavesIndex element leavesArray)) branchArray
-                  return False
+            then case SmallArray.findWithIndex testKey leavesArray of
+              Just (leavesIndex, leavesElement) -> do
+                let
+                  !newLeavesArray = SmallArray.set leavesIndex element leavesArray
+                  !newBranch = LeavesBranch hash newLeavesArray
+                  !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
+                  in do
+                    writeTVar var newBranchArray
+                    return False
               Nothing -> do
-                writeTVar var $! SparseSmallArray.replace index (LeavesBranch hash (SmallArray.cons element leavesArray)) branchArray
+                writeTVar var $! SparseSmallArray.replace branchIndex (LeavesBranch hash (SmallArray.cons element leavesArray)) branchArray
                 return True
             else let
               nextHash = HashConstructors.succLevel hash
               nextLeavesHash = HashConstructors.succLevel leavesHash
               in do
                 hamt <- pair nextHash (LeavesBranch nextHash (pure element)) nextLeavesHash (LeavesBranch nextLeavesHash leavesArray)
-                writeTVar var $! SparseSmallArray.replace index (BranchesBranch hamt) branchArray
+                writeTVar var $! SparseSmallArray.replace branchIndex (BranchesBranch hamt) branchArray
                 return True
-          BranchesBranch hamt -> insertExplicitly (HashConstructors.succLevel hash) test element hamt
+          BranchesBranch hamt -> insertExplicitly (HashConstructors.succLevel hash) testKey element hamt
 
 {-|
 Returns a flag, specifying, whether the size has been affected.
@@ -102,7 +105,7 @@ lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
 
 lookupExplicitly :: Eq a => Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
 lookupExplicitly hash test (Hamt var) =
-  {-# SCC "lookupExplicitly" #-} 
+  {-# SCC "lookupExplicitly" #-}
   let
     !index = HashAccessors.index hash
     in do
@@ -112,7 +115,7 @@ lookupExplicitly hash test (Hamt var) =
           LeavesBranch leavesHash leavesArray -> if leavesHash == hash
             then return (SmallArray.find test leavesArray)
             else return Nothing
-          BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test (Hamt var)
+          BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test hamt
         Nothing -> return Nothing
 
 reset :: Hamt a -> STM ()
