@@ -12,8 +12,8 @@ import qualified Main.Transaction as Transaction
 
 key :: Gen Text
 key = do
-  length <- frequency [(1, pure 0), (10, choose (1, 3))]
-  chars <- vectorOf length (choose ('a', 'd'))
+  length <- frequency [(1, pure 0), (20, pure 1), (2, pure 2), (1, pure 3)]
+  chars <- vectorOf length (choose ('a', 'b'))
   return (fromString chars)
 
 value :: Gen Int
