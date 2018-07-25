@@ -4,10 +4,10 @@ import Rebase.Prelude
 import Criterion.Main
 import Control.Monad.Free
 import Control.Monad.Free.TH
-import qualified STM.HAMT.Simple as A
+import qualified StmHamt.Hamt as A
 import qualified Control.Concurrent.Async as B
 import qualified System.Random.MWC.Monad as C
-import qualified Focus.Impure as D
+import qualified Focus as D
 import qualified Rebase.Data.Text as E
 import qualified Rebase.Data.Vector as F
 
@@ -28,15 +28,15 @@ type Transaction row = Free (TransactionF row)
 type Interpreter container = 
   forall row. (Hashable row, Eq row) => container row -> forall result. Transaction row result -> STM result
 
-specializedInterpreter :: Interpreter A.HAMT
+specializedInterpreter :: Interpreter A.Hamt
 specializedInterpreter container =
   iterM $ \case
-    Insert row n -> A.insert id row container >> n
+    Insert row continue -> A.insert id row container >> continue
 
-focusInterpreter :: Interpreter A.HAMT
+focusInterpreter :: Interpreter A.Hamt
 focusInterpreter container =
   iterM $ \case
-    Insert row n -> A.focus (D.insert row) id row container >> n
+    Insert row continue -> A.focus (D.insert row) id row container >> continue
 
 
 -- * Session and runners
@@ -48,7 +48,7 @@ type Session row = [[Transaction row ()]]
 type SessionRunner = 
   forall row. (Hashable row, Eq row) => Session row -> IO ()
 
-sessionRunner :: Interpreter A.HAMT -> SessionRunner
+sessionRunner :: Interpreter A.Hamt -> SessionRunner
 sessionRunner interpreter threadTransactions = do
   m <- atomically $ A.new
   void $ flip B.mapConcurrently threadTransactions $ \actions -> do
