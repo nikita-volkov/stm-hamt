@@ -42,10 +42,10 @@ pair hash1 branch1 hash2 branch2 =
       then pair (HashConstructors.succLevel hash1) branch1 (HashConstructors.succLevel hash2) branch2
       else Hamt <$> newTVar (SparseSmallArray.pair index1 branch1 index2 branch2)
 
-focus :: (Eq element, Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
+focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
 focus focus elementToKey key = focusExplicitly focus (hash key) ((==) key . elementToKey)
 
-focusExplicitly :: Eq a => Focus a STM b -> Int -> (a -> Bool) -> Hamt a -> STM b
+focusExplicitly :: Focus a STM b -> Int -> (a -> Bool) -> Hamt a -> STM b
 focusExplicitly focus hash test hamt =
   {-# SCC "focus" #-} 
   let
@@ -55,7 +55,7 @@ focusExplicitly focus hash test hamt =
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-insert :: (Eq element, Eq key, Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
+insert :: (Eq key, Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
 insert elementToKey element = let
   !key = elementToKey element
   in insertExplicitly (hash key) ((==) key . elementToKey) element
@@ -63,7 +63,7 @@ insert elementToKey element = let
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-insertExplicitly :: Eq a => Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
+insertExplicitly :: Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
 insertExplicitly hash testKey element (Hamt var) =
   {-# SCC "insertExplicitly" #-} 
   let
@@ -100,10 +100,10 @@ insertExplicitly hash testKey element (Hamt var) =
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-lookup :: (Eq element, Eq key, Hashable key) => (element -> key) -> key -> Hamt element -> STM (Maybe element)
+lookup :: (Eq key, Hashable key) => (element -> key) -> key -> Hamt element -> STM (Maybe element)
 lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
 
-lookupExplicitly :: Eq a => Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
+lookupExplicitly :: Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
 lookupExplicitly hash test (Hamt var) =
   {-# SCC "lookupExplicitly" #-}
   let
