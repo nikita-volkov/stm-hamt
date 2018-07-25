@@ -4,10 +4,10 @@ import Prelude
 import Test.Tasty
 import Test.Tasty.Runners
 import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
+import Test.Tasty.QuickCheck hiding ((.&.))
 import Test.QuickCheck.Instances
-import Test.QuickCheck
-import Test.QuickCheck.Property hiding (testCase)
+import Test.QuickCheck hiding ((.&.))
+import Test.QuickCheck.Property hiding (testCase, (.&.))
 import StmHamt.Hamt (Hamt)
 import Main.Transaction (Transaction)
 import qualified Main.Transaction as Transaction
@@ -24,7 +24,13 @@ main =
   [
     testGroup "Hamt" $ let
 
-      hamtFromListUsingInsertInIo :: (Eq key, Hashable key, Eq value) => [(key, value)] -> IO (Hamt (key, value))
+      hamtFromListUsingInsertWithHashInIo :: (Eq key, Eq value, Show (key, value)) => (key -> Int) -> [(key, value)] -> IO (Hamt (key, value))
+      hamtFromListUsingInsertWithHashInIo hash list = do
+        hamt <- Hamt.newIO
+        atomically $ forM_ list $ \ (key, value) -> Hamt.insertExplicitly (hash key) ((==) key . fst) (key, value) hamt
+        return hamt
+
+      hamtFromListUsingInsertInIo :: (Eq key, Hashable key, Eq value, Show (key, value)) => [(key, value)] -> IO (Hamt (key, value))
       hamtFromListUsingInsertInIo list = do
         hamt <- Hamt.newIO
         atomically $ forM_ list $ \ pair -> Hamt.insert fst pair hamt
@@ -39,8 +45,8 @@ main =
       listToListThruHamtInIo :: [(Char, Int)] -> IO [(Char, Int)]
       listToListThruHamtInIo = hamtFromListUsingInsertInIo >=> hamtToListInIo
 
-      testTransactionProperty :: String -> Gen Transaction -> TestTree
-      testTransactionProperty name transactionGen =
+      testTransactionProperty :: String -> (Text -> Int) -> Gen Transaction -> TestTree
+      testTransactionProperty name hash transactionGen =
         let
           gen = (,) <$> transactionGen <*> Gens.keyValueList
           in
@@ -48,7 +54,7 @@ main =
             forAll gen $ \ (Transaction.Transaction name applyToHashMap applyToStmHamt, list) -> let
               (result1, hashMapList) = fmap (sort . HashMap.toList) (applyToHashMap (HashMap.fromList list))
               (result2, hamtList) = unsafePerformIO $ do
-                hamt <- hamtFromListUsingInsertInIo list
+                hamt <- hamtFromListUsingInsertWithHashInIo hash list
                 result2 <- atomically $ applyToStmHamt hamt
                 list <- hamtToListInIo hamt
                 return (result2, sort list)
@@ -84,16 +90,18 @@ main =
               hamtList <- listToListThruHamtInIo list
               assertEqual (show hamtList) (delete ('b', 1) list) hamtList
           ,
-          testTransactionProperty "insert" Gens.insertTransaction
+          testTransactionProperty "insert" hash Gens.insertTransaction
           ,
-          testTransactionProperty "insertWithHash" Gens.insertWithHashTransaction
+          let
+            newHash key = hash key .&. 0b111
+            in testTransactionProperty "Hash collision" newHash (Gens.insertWithHashTransaction newHash)
           ,
-          testTransactionProperty "insertUsingFocus" Gens.insertUsingFocusTransaction
+          testTransactionProperty "insertUsingFocus" hash Gens.insertUsingFocusTransaction
           ,
-          testTransactionProperty "deleteUsingFocus" Gens.deleteUsingFocusTransaction
+          testTransactionProperty "deleteUsingFocus" hash Gens.deleteUsingFocusTransaction
           ,
-          testTransactionProperty "incrementUsingAdjustFocus" Gens.incrementUsingAdjustFocusTransaction
+          testTransactionProperty "incrementUsingAdjustFocus" hash Gens.incrementUsingAdjustFocusTransaction
           ,
-          testTransactionProperty "lookup" Gens.lookupTransaction
+          testTransactionProperty "lookup" hash Gens.lookupTransaction
         ]
   ]

@@ -25,12 +25,13 @@ lookupTransaction = Transaction.lookup <$> key
 insertTransaction :: Gen Transaction
 insertTransaction = Transaction.insert <$> key <*> value
 
-insertWithHashTransaction :: Gen Transaction
-insertWithHashTransaction = do
+insertWithHashTransaction :: (Text -> Int) -> Gen Transaction
+insertWithHashTransaction hash = do
   keyValue <- key
   valueValue <- value
-  let hashValue = hash keyValue .&. 0b111
-  return (Transaction.insertWithHash hashValue keyValue valueValue)
+  let
+    !hashValue = hash keyValue
+    in return (Transaction.insertWithHash hashValue keyValue valueValue)
 
 insertUsingFocusTransaction :: Gen Transaction
 insertUsingFocusTransaction = Transaction.insertUsingFocus <$> key <*> value
@@ -51,7 +52,6 @@ transaction =
       (9, lookupTransaction),
       (2, insertTransaction),
       (2, insertUsingFocusTransaction),
-      (5, insertWithHashTransaction),
       (9, deleteUsingFocusTransaction),
       (9, incrementUsingAdjustFocusTransaction)
     ]
