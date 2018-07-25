@@ -105,7 +105,7 @@ lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
 
 lookupExplicitly :: Eq a => Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
 lookupExplicitly hash test (Hamt var) =
-  {-# SCC "lookupExplicitly" #-} 
+  {-# SCC "lookupExplicitly" #-}
   let
     !index = HashAccessors.index hash
     in do
@@ -115,7 +115,7 @@ lookupExplicitly hash test (Hamt var) =
           LeavesBranch leavesHash leavesArray -> if leavesHash == hash
             then return (SmallArray.find test leavesArray)
             else return Nothing
-          BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test (Hamt var)
+          BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test hamt
         Nothing -> return Nothing
 
 reset :: Hamt a -> STM ()
