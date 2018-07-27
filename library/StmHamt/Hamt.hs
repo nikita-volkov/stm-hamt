@@ -15,7 +15,7 @@ module StmHamt.Hamt
 )
 where
 
-import StmHamt.Prelude hiding (empty, insert, update, lookup, delete)
+import StmHamt.Prelude hiding (empty, insert, update, lookup, delete, null)
 import StmHamt.Types
 import qualified Focus as Focus
 import qualified StmHamt.Focuses as Focuses
@@ -123,3 +123,8 @@ reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArray.empty
 
 unfoldM :: Hamt a -> UnfoldM STM a
 unfoldM = UnfoldMs.hamtElements
+
+null :: Hamt a -> STM Bool
+null (Hamt branchSsaVar) = do
+  branchSsa <- readTVar branchSsaVar
+  return (SparseSmallArray.null branchSsa)
