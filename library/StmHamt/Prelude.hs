@@ -3,8 +3,8 @@ module StmHamt.Prelude
   module Exports,
   traversePair,
   modifyTVar',
-  forMInPositiveRange_,
-  forMInNegativeRange_,
+  forMInAscendingRange_,
+  forMInDescendingRange_,
 )
 where
 
@@ -105,12 +105,12 @@ modifyTVar' var f = do
     x <- readTVar var
     writeTVar var $! f x
 
-{-# INLINE forMInPositiveRange_ #-}
-forMInPositiveRange_ :: Applicative m => Int -> Int -> (Int -> m a) -> m ()
-forMInPositiveRange_ !startN !endN f =
+{-# INLINE forMInAscendingRange_ #-}
+forMInAscendingRange_ :: Applicative m => Int -> Int -> (Int -> m a) -> m ()
+forMInAscendingRange_ !startN !endN f =
   ($ startN) $ fix $ \loop !n -> if n < endN then f n *> loop (succ n) else pure ()
 
-{-# INLINE forMInNegativeRange_ #-}
-forMInNegativeRange_ :: Applicative m => Int -> Int -> (Int -> m a) -> m ()
-forMInNegativeRange_ !startN !endN f =
+{-# INLINE forMInDescendingRange_ #-}
+forMInDescendingRange_ :: Applicative m => Int -> Int -> (Int -> m a) -> m ()
+forMInDescendingRange_ !startN !endN f =
   ($ pred startN) $ fix $ \loop !n -> if n >= endN then f n *> loop (pred n) else pure ()
