@@ -14,6 +14,7 @@ module StmHamt.SizedHamt
   lookup,
   reset,
   unfoldM,
+  listT,
 )
 where
 
@@ -74,3 +75,7 @@ lookup elementToKey key (SizedHamt hamt _) = Hamt.lookup elementToKey key hamt
 {-# INLINE unfoldM #-}
 unfoldM :: SizedHamt a -> UnfoldM STM a
 unfoldM (SizedHamt hamt _) = Hamt.unfoldM hamt
+
+{-# INLINE listT #-}
+listT :: SizedHamt a -> ListT STM a
+listT (SizedHamt hamt _) = Hamt.listT hamt
