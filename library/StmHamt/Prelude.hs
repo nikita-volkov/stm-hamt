@@ -72,6 +72,10 @@ import Text.Printf as Exports (printf, hPrintf)
 import Text.Read as Exports (Read(..), readMaybe, readEither)
 import Unsafe.Coerce as Exports
 
+-- transformers
+-------------------------
+import Control.Monad.Trans.Class as Exports
+
 -- hashable
 -------------------------
 import Data.Hashable as Exports (Hashable(..))
@@ -92,6 +96,10 @@ import PrimitiveExtras.SparseSmallArray as Exports (SparseSmallArray)
 -------------------------
 import DeferredFolds.Unfold as Exports (Unfold(..))
 import DeferredFolds.UnfoldM as Exports (UnfoldM(..))
+
+-- list-t
+-------------------------
+import ListT as Exports (ListT(..))
 
 -- | A replacement for the missing 'Traverse' instance of pair in base < 4.7.
 {-# INLINE traversePair #-}

@@ -12,6 +12,7 @@ module StmHamt.Hamt
   lookupExplicitly,
   reset,
   unfoldM,
+  listT,
 )
 where
 
@@ -22,6 +23,7 @@ import qualified StmHamt.Focuses as Focuses
 import qualified StmHamt.Constructors.Hash as HashConstructors
 import qualified StmHamt.Accessors.Hash as HashAccessors
 import qualified StmHamt.UnfoldMs as UnfoldMs
+import qualified StmHamt.ListT as ListT
 import qualified PrimitiveExtras.SmallArray as SmallArray
 import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
 
@@ -123,6 +125,9 @@ reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArray.empty
 
 unfoldM :: Hamt a -> UnfoldM STM a
 unfoldM = UnfoldMs.hamtElements
+
+listT :: Hamt a -> ListT STM a
+listT = ListT.hamtElements
 
 null :: Hamt a -> STM Bool
 null (Hamt branchSsaVar) = do
