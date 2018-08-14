@@ -100,6 +100,11 @@ main =
               hamtList <- listToListThruHamtInIo list
               assertEqual (show hamtList) expectedList (sort hamtList)
           ,
+          testProperty "hashmap isomorphism" $ \ (list :: [(Text, Int)]) -> let
+            expectedList = sort (HashMap.toList (HashMap.fromList list))
+            hamtList = sort (unsafePerformIO (listToListThruHamtInIo list))
+            in expectedList === hamtList
+          ,
           testTransactionProperty "insert" hash Gens.insertTransaction
           ,
           let
