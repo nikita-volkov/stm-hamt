@@ -62,40 +62,31 @@ insertExplicitly hash testKey element = {-# SCC "insertExplicitly" #-} iterate 0
     !branchIndex = IntOps.indexAtDepth depth hash
     in do
       branchArray <- readTVar var
-      traceM ("Inserting " <> show element <> " with hash " <> show hash <> " at depth " <> show depth <> " at branch " <> show branchIndex <>
-        ". Where branchArray has the following cells filled: " <> (show (findIndices isJust (SparseSmallArray.toMaybeList branchArray))))
       case SparseSmallArray.lookup branchIndex branchArray of
         Nothing -> do
-          traceM ("Inserting a new branch")
           writeTVar var $! SparseSmallArray.insert branchIndex (LeavesBranch hash (pure element)) branchArray
           return True
         Just branch -> case branch of
           LeavesBranch leavesHash leavesArray ->
-            trace ("Leaves branch found") $
             if leavesHash == hash
-              then trace ("Hashes are equal") $ case SmallArray.findWithIndex testKey leavesArray of
-                Just (leavesIndex, leavesElement) -> do
-                  traceM ("Found a matching element")
-                  let
-                    !newLeavesArray = SmallArray.set leavesIndex element leavesArray
-                    !newBranch = LeavesBranch hash newLeavesArray
-                    !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
-                    in do
-                      writeTVar var newBranchArray
-                      return False
+              then case SmallArray.findWithIndex testKey leavesArray of
+                Just (leavesIndex, leavesElement) -> let
+                  !newLeavesArray = SmallArray.set leavesIndex element leavesArray
+                  !newBranch = LeavesBranch hash newLeavesArray
+                  !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
+                  in do
+                    writeTVar var newBranchArray
+                    return False
                 Nothing -> let
                   newLeavesArray = SmallArray.cons element leavesArray
                   in do
-                    traceM ("Didn't find a matching element. New leaves: " <> show newLeavesArray)
                     writeTVar var $! SparseSmallArray.replace branchIndex (LeavesBranch hash newLeavesArray) branchArray
                     return True
-              else trace ("Hashes aren't equal") $ do
+              else do
                 hamt <- pair (IntOps.nextDepth depth) hash (LeavesBranch hash (pure element)) leavesHash (LeavesBranch leavesHash leavesArray)
                 writeTVar var $! SparseSmallArray.replace branchIndex (BranchesBranch hamt) branchArray
                 return True
-          BranchesBranch hamt ->
-            trace ("Branches branch found") $
-            iterate (IntOps.nextDepth depth) hamt
+          BranchesBranch hamt -> iterate (IntOps.nextDepth depth) hamt
 
 pair :: Int -> Int -> Branch a -> Int -> Branch a -> STM (Hamt a)
 pair depth hash1 branch1 hash2 branch2 =
@@ -103,9 +94,7 @@ pair depth hash1 branch1 hash2 branch2 =
   let
     index1 = IntOps.indexAtDepth depth hash1
     index2 = IntOps.indexAtDepth depth hash2
-    in
-      trace ("Pair. Depth: " <> show depth <> ". Indices: " <> show (index1, index2) <> ". Hashes: " <> show (hash1, hash2)) $
-      if index1 == index2
+    in if index1 == index2
         then do
           deeperHamt <- pair (IntOps.nextDepth depth) hash1 branch1 hash2 branch2
           var <- newTVar (SparseSmallArray.singleton index1 (BranchesBranch deeperHamt))
