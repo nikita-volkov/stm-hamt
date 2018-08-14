@@ -105,6 +105,14 @@ main =
             hamtList = sort (unsafePerformIO (listToListThruHamtInIo list))
             in expectedList === hamtList
           ,
+          testProperty "hashmap isomorphism using focus" $ \ (list :: [(Text, Int)]) -> let
+            expectedList = sort (HashMap.toList (HashMap.fromList list))
+            hamtList = sort $ unsafePerformIO $ do
+              hamt <- Hamt.newIO
+              atomically $ forM_ list $ \ pair -> Hamt.focus (Focus.insert pair) fst (fst pair) hamt
+              hamtToListInIo hamt
+            in expectedList === hamtList
+          ,
           testTransactionProperty "insert" hash Gens.insertTransaction
           ,
           let
