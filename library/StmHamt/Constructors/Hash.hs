@@ -8,3 +8,7 @@ import qualified StmHamt.Accessors.Hash as HashAccessors
 {-# INLINE succLevel #-}
 succLevel :: Int -> Int
 succLevel hash = unsafeShiftR hash HashAccessors.step
+
+{-# INLINE atDepth #-}
+atDepth :: Int -> Int -> Int
+atDepth depth hash = unsafeShiftR hash depth

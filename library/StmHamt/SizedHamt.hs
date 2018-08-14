@@ -62,7 +62,7 @@ focus focus elementToKey key (SizedHamt hamt sizeVar) =
     newFocus = Focus.testingSizeChange (Just pred) Nothing (Just succ) focus
 
 {-# INLINE insert #-}
-insert :: (Eq key, Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
+insert :: (Eq key, Hashable key, Show element) => (element -> key) -> element -> SizedHamt element -> STM ()
 insert elementToKey element (SizedHamt hamt sizeVar) =
   do
     inserted <- Hamt.insert elementToKey element hamt

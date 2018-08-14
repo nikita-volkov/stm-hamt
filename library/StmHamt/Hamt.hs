@@ -24,6 +24,7 @@ import qualified StmHamt.Constructors.Hash as HashConstructors
 import qualified StmHamt.Accessors.Hash as HashAccessors
 import qualified StmHamt.UnfoldMs as UnfoldMs
 import qualified StmHamt.ListT as ListT
+import qualified StmHamt.IntOps as IntOps
 import qualified PrimitiveExtras.SmallArray as SmallArray
 import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
 
@@ -33,16 +34,6 @@ new = Hamt <$> newTVar SparseSmallArray.empty
 
 newIO :: IO (Hamt a)
 newIO = Hamt <$> newTVarIO SparseSmallArray.empty
-
-pair :: Int -> Branch a -> Int -> Branch a -> STM (Hamt a)
-pair hash1 branch1 hash2 branch2 =
-  {-# SCC "pair" #-}
-  let
-    index1 = HashAccessors.index hash1
-    index2 = HashAccessors.index hash2
-    in if index1 == index2
-      then pair (HashConstructors.succLevel hash1) branch1 (HashConstructors.succLevel hash2) branch2
-      else Hamt <$> newTVar (SparseSmallArray.pair index1 branch1 index2 branch2)
 
 focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
 focus focus elementToKey key = focusExplicitly focus (hash key) ((==) key . elementToKey)
@@ -57,7 +48,7 @@ focusExplicitly focus hash test hamt =
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-insert :: (Eq key, Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
+insert :: (Eq key, Hashable key, Show element) => (element -> key) -> element -> Hamt element -> STM Bool
 insert elementToKey element = let
   !key = elementToKey element
   in insertExplicitly (hash key) ((==) key . elementToKey) element
@@ -65,39 +56,61 @@ insert elementToKey element = let
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-insertExplicitly :: Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
-insertExplicitly hash testKey element (Hamt var) =
-  {-# SCC "insertExplicitly" #-} 
-  let
-    !branchIndex = HashAccessors.index hash
+insertExplicitly :: Show a => Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
+insertExplicitly hash testKey element = {-# SCC "insertExplicitly" #-} iterate 0 where
+  iterate depth (Hamt var) = let
+    !branchIndex = IntOps.indexAtDepth depth hash
     in do
       branchArray <- readTVar var
+      traceM ("Inserting " <> show element <> " with hash " <> show hash <> " at depth " <> show depth <> " at branch " <> show branchIndex <>
+        ". Where branchArray has the following cells filled: " <> (show (findIndices isJust (SparseSmallArray.toMaybeList branchArray))))
       case SparseSmallArray.lookup branchIndex branchArray of
         Nothing -> do
+          traceM ("Inserting a new branch")
           writeTVar var $! SparseSmallArray.insert branchIndex (LeavesBranch hash (pure element)) branchArray
           return True
         Just branch -> case branch of
-          LeavesBranch leavesHash leavesArray -> if leavesHash == hash
-            then case SmallArray.findWithIndex testKey leavesArray of
-              Just (leavesIndex, leavesElement) -> do
-                let
-                  !newLeavesArray = SmallArray.set leavesIndex element leavesArray
-                  !newBranch = LeavesBranch hash newLeavesArray
-                  !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
+          LeavesBranch leavesHash leavesArray ->
+            trace ("Leaves branch found") $
+            if leavesHash == hash
+              then trace ("Hashes are equal") $ case SmallArray.findWithIndex testKey leavesArray of
+                Just (leavesIndex, leavesElement) -> do
+                  traceM ("Found a matching element")
+                  let
+                    !newLeavesArray = SmallArray.set leavesIndex element leavesArray
+                    !newBranch = LeavesBranch hash newLeavesArray
+                    !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
+                    in do
+                      writeTVar var newBranchArray
+                      return False
+                Nothing -> let
+                  newLeavesArray = SmallArray.cons element leavesArray
                   in do
-                    writeTVar var newBranchArray
-                    return False
-              Nothing -> do
-                writeTVar var $! SparseSmallArray.replace branchIndex (LeavesBranch hash (SmallArray.cons element leavesArray)) branchArray
-                return True
-            else let
-              nextHash = HashConstructors.succLevel hash
-              nextLeavesHash = HashConstructors.succLevel leavesHash
-              in do
-                hamt <- pair nextHash (LeavesBranch nextHash (pure element)) nextLeavesHash (LeavesBranch nextLeavesHash leavesArray)
+                    traceM ("Didn't find a matching element. New leaves: " <> show newLeavesArray)
+                    writeTVar var $! SparseSmallArray.replace branchIndex (LeavesBranch hash newLeavesArray) branchArray
+                    return True
+              else trace ("Hashes aren't equal") $ do
+                hamt <- pair (IntOps.nextDepth depth) hash (LeavesBranch hash (pure element)) leavesHash (LeavesBranch leavesHash leavesArray)
                 writeTVar var $! SparseSmallArray.replace branchIndex (BranchesBranch hamt) branchArray
                 return True
-          BranchesBranch hamt -> insertExplicitly (HashConstructors.succLevel hash) testKey element hamt
+          BranchesBranch hamt ->
+            trace ("Branches branch found") $
+            iterate (IntOps.nextDepth depth) hamt
+
+pair :: Int -> Int -> Branch a -> Int -> Branch a -> STM (Hamt a)
+pair depth hash1 branch1 hash2 branch2 =
+  {-# SCC "pair" #-}
+  let
+    index1 = IntOps.indexAtDepth depth hash1
+    index2 = IntOps.indexAtDepth depth hash2
+    in
+      trace ("Pair. Depth: " <> show depth <> ". Indices: " <> show (index1, index2) <> ". Hashes: " <> show (hash1, hash2)) $
+      if index1 == index2
+        then do
+          deeperHamt <- pair (IntOps.nextDepth depth) hash1 branch1 hash2 branch2
+          var <- newTVar (SparseSmallArray.singleton index1 (BranchesBranch deeperHamt))
+          return (Hamt var)
+        else Hamt <$> newTVar (SparseSmallArray.pair index1 branch1 index2 branch2)
 
 {-|
 Returns a flag, specifying, whether the size has been affected.
