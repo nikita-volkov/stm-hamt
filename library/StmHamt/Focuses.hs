@@ -23,7 +23,7 @@ onBranchCases hash (Focus concealHamt revealHamt) (Focus concealElementArray rev
     (\ case
       BranchesBranch hamt -> let
         interpretChange = \ case
-          Set !newHamt -> return (Set (BranchesBranch hamt))
+          Set !newHamt -> return (Set (BranchesBranch newHamt))
           Leave -> return Leave
           Remove -> return Remove
         in revealHamt hamt >>= traverse interpretChange
