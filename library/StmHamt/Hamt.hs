@@ -19,7 +19,7 @@ where
 import StmHamt.Prelude hiding (empty, insert, update, lookup, delete, null)
 import StmHamt.Types
 import qualified Focus as Focus
-import qualified StmHamt.Focuses as Focuses
+import qualified StmHamt.Focuses as Focus
 import qualified StmHamt.UnfoldMs as UnfoldMs
 import qualified StmHamt.ListT as ListT
 import qualified StmHamt.IntOps as IntOps
@@ -40,7 +40,7 @@ focusExplicitly :: Focus a STM b -> Int -> (a -> Bool) -> Hamt a -> STM b
 focusExplicitly focus hash test hamt =
   {-# SCC "focus" #-} 
   let
-    Focus conceal reveal = Focuses.onHamtElement hash test focus
+    Focus _ reveal = Focus.onHamtElement hash test focus
     in fmap fst (reveal hamt)
 
 {-|

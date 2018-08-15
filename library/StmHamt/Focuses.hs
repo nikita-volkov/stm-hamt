@@ -12,45 +12,43 @@ import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
 import qualified PrimitiveExtras.SmallArray as SmallArray
 
 
-onBranchElement :: forall a b. Int -> Int -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
-onBranchElement depth hash testA aFocus@(Focus concealA revealA) =
-  let
-    Focus concealLeaves revealLeaves = SmallArray.onFoundElementFocus testA (const False) aFocus
-    branchesFocus :: Int -> Focus (TVar (SparseSmallArray (Branch a))) STM b
-    branchesFocus depth = let
-      !branchIndex = IntOps.indexAtDepth depth hash
-      in onTVarValue (SparseSmallArray.onElementAtFocus branchIndex (branchFocus hash))
-    branchFocus :: Int -> Focus (Branch a) STM b
-    branchFocus depth = Focus concealBranch revealBranch where
-      Focus concealBranchesVar revealBranchesVar = branchesFocus (IntOps.nextDepth depth)
-      concealBranch = fmap (fmap (fmap (LeavesBranch hash))) concealLeaves
-      revealBranch = \ case
-        LeavesBranch leavesHash leavesArray -> case leavesHash == hash of
-          True -> fmap (fmap (fmap (LeavesBranch leavesHash))) (revealLeaves leavesArray)
-          False -> concealA >>= traverse interpretChange where
-            interpretChange = \ case
-              Set newA -> Set <$> BranchConstructors.pair (IntOps.nextDepth depth) hash (BranchConstructors.singleton hash newA) hash (LeavesBranch hash leavesArray)
-              _ -> return Leave
-        BranchesBranch (Hamt var) -> fmap (fmap (fmap (BranchesBranch . Hamt))) (revealBranchesVar var)
-    in branchFocus hash
+onBranchCases :: Int -> Focus (Hamt a) STM b -> Focus (SmallArray a) STM b -> Focus (Branch a) STM b
+onBranchCases hash (Focus concealHamt revealHamt) (Focus concealElementArray revealElementArray) =
+  Focus
+    (let
+      interpretChange = \ case
+        Set !hamt -> return (Set (BranchesBranch hamt))
+        _ -> return Leave
+      in concealHamt >>= traverse interpretChange)
+    (\ case
+      BranchesBranch hamt -> let
+        interpretChange = \ case
+          Set !newHamt -> return (Set (BranchesBranch hamt))
+          Leave -> return Leave
+          Remove -> return Remove
+        in revealHamt hamt >>= traverse interpretChange
+      LeavesBranch leavesHash leafArray -> fmap (fmap (fmap (LeavesBranch leavesHash)))
+        (if leavesHash == hash
+          then revealElementArray leafArray
+          else concealElementArray))
 
-onHamtElement :: Int -> Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
-onHamtElement depth hash test focus =
-  let
-    !branchIndex = IntOps.indexAtDepth depth hash
-    Focus concealBranches revealBranches =
-      SparseSmallArray.onElementAtFocus branchIndex $
-      onBranchElement (IntOps.nextDepth depth) hash test focus
-    concealHamt = concealBranches >>= traverse hamtChangeStm where
-      hamtChangeStm = \ case
-        Leave -> return Leave
-        Set !branches -> Set . Hamt <$> newTVar branches
-        Remove -> Set . Hamt <$> newTVar SparseSmallArray.empty
-    revealHamt (Hamt branchesVar) = do
-      branches <- readTVar branchesVar
-      (result, branchesChange) <- revealBranches branches
-      case branchesChange of
-        Leave -> return (result, Leave)
-        Set !newBranches -> writeTVar branchesVar newBranches $> (result, Leave)
-        Remove -> writeTVar branchesVar SparseSmallArray.empty $> (result, Leave)
-    in Focus concealHamt revealHamt
+onHamtBranch :: Int -> Focus (Branch a) STM b -> Focus (Hamt a) STM b
+onHamtBranch index =
+  mappingInput Hamt (\ (Hamt var) -> var) .
+  onTVarValue .
+  SparseSmallArray.onElementAtFocus index
+
+onBranchElement :: Int -> Int -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
+onBranchElement depth hash testElement elementFocus = loop depth where
+  loop depth =
+    onBranchCases hash
+      (onHamtBranch (IntOps.indexAtDepth depth hash) (loop (IntOps.nextDepth depth)))
+      (SmallArray.onFoundElementFocus testElement (const False) elementFocus)
+
+onHamtElement :: Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
+onHamtElement hash testElement elementFocus = loop 0 where
+  loop depth =
+    onHamtBranch (IntOps.indexAtDepth depth hash)
+      (onBranchCases hash
+        (loop (IntOps.nextDepth depth))
+        (SmallArray.onFoundElementFocus testElement (const False) elementFocus))
