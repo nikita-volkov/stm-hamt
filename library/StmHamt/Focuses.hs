@@ -29,13 +29,6 @@ onHamtBranch index =
   onTVarValue .
   SparseSmallArray.onElementAtFocus index
 
-onBranchElement :: Int -> Int -> (a -> Bool) -> Focus a STM b -> Focus (Branch a) STM b
-onBranchElement depth hash testElement elementFocus = loop depth where
-  loop depth =
-    onBranchCases hash
-      (onHamtBranch (IntOps.indexAtDepth depth hash) (loop (IntOps.nextDepth depth)))
-      (SmallArray.onFoundElementFocus testElement (const False) elementFocus)
-
 onHamtElement :: Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
 onHamtElement hash testElement elementFocus = loop 0 where
   loop depth =
