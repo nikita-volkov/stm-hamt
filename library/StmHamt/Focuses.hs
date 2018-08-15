@@ -15,18 +15,9 @@ import qualified PrimitiveExtras.SmallArray as SmallArray
 onBranchCases :: Int -> Focus (Hamt a) STM b -> Focus (SmallArray a) STM b -> Focus (Branch a) STM b
 onBranchCases hash (Focus concealHamt revealHamt) (Focus concealElementArray revealElementArray) =
   Focus
-    (let
-      interpretChange = \ case
-        Set !hamt -> return (Set (BranchesBranch hamt))
-        _ -> return Leave
-      in concealHamt >>= traverse interpretChange)
+    (fmap (fmap (fmap BranchesBranch)) concealHamt)
     (\ case
-      BranchesBranch hamt -> let
-        interpretChange = \ case
-          Set !newHamt -> return (Set (BranchesBranch newHamt))
-          Leave -> return Leave
-          Remove -> return Remove
-        in revealHamt hamt >>= traverse interpretChange
+      BranchesBranch hamt -> fmap (fmap (fmap BranchesBranch)) (revealHamt hamt)
       LeavesBranch leavesHash leafArray -> fmap (fmap (fmap (LeavesBranch leavesHash)))
         (if leavesHash == hash
           then revealElementArray leafArray
