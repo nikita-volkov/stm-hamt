@@ -40,7 +40,7 @@ focusExplicitly :: Focus a STM b -> Int -> (a -> Bool) -> Hamt a -> STM b
 focusExplicitly focus hash test hamt =
   {-# SCC "focus" #-} 
   let
-    Focus _ reveal = Focus.onHamtElement hash test focus
+    Focus _ reveal = Focus.onHamtElement 0 hash test focus
     in fmap fst (reveal hamt)
 
 {-|

@@ -106,7 +106,9 @@ main =
             hashMapList = sort (HashMap.toList (HashMap.fromList list))
             hamtList = sort $ unsafePerformIO $ do
               hamt <- Hamt.newIO
-              atomically $ forM_ list $ \ pair -> Hamt.focus (Focus.insert pair) fst (fst pair) hamt
+              atomically $ forM_ list $ \ pair -> do
+                traceM ("Inserting " <> show pair)
+                Hamt.focus (Focus.insert pair) fst (fst pair) hamt
               hamtToListInIo hamt
             in assertEqual (show hamtList) hashMapList hamtList
           ,
