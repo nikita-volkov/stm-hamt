@@ -20,7 +20,7 @@ onBranchElement depth hash testA aFocus@(Focus concealA revealA) =
     branchesFocus depth = 
       let
         !branchIndex = IntOps.indexAtDepth depth hash
-        in onTVarValue (SparseSmallArray.onElementAtFocus branchIndex (branchFocus hash))
+        in onTVarValue (SparseSmallArray.onElementAtFocus branchIndex (branchFocus depth))
     branchFocus :: Int -> Focus (Branch a) STM b
     branchFocus depth = Focus concealBranch revealBranch where
       concealBranch = fmap (fmap (fmap (LeavesBranch hash))) concealLeaves
@@ -34,7 +34,7 @@ onBranchElement depth hash testA aFocus@(Focus concealA revealA) =
         BranchesBranch (Hamt var) -> let
           Focus concealBranchesVar revealBranchesVar = branchesFocus (IntOps.nextDepth depth)
           in fmap (fmap (fmap (BranchesBranch . Hamt))) (revealBranchesVar var)
-    in branchFocus hash
+    in branchFocus depth
 
 onHamtElement :: Int -> Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) STM b
 onHamtElement depth hash test focus =
