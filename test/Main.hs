@@ -112,6 +112,18 @@ main =
               hamtToListInIo hamt
             in assertEqual (show hamtList) hashMapList hamtList
           ,
+          testCase "insert text with dups using focus 2" $ let
+            list :: [(Text, Int)]
+            list = [("",0),("\877925R\vGw{f}\1112191+",0),("",0)]
+            hashMapList = sort (HashMap.toList (HashMap.fromList list))
+            hamtList = sort $ unsafePerformIO $ do
+              hamt <- Hamt.newIO
+              atomically $ forM_ list $ \ pair -> do
+                traceM ("Inserting " <> show pair)
+                Hamt.focus (Focus.insert pair) fst (fst pair) hamt
+              hamtToListInIo hamt
+            in assertEqual (show hamtList) hashMapList hamtList
+          ,
           testProperty "hashmap insertion isomorphism" $ \ (list :: [(Text, Int)]) -> let
             expectedList = sort (HashMap.toList (HashMap.fromList list))
             hamtList = sort $ unsafePerformIO $ do
