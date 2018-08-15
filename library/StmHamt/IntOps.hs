@@ -2,7 +2,6 @@ module StmHamt.IntOps where
 
 import StmHamt.Prelude hiding (mask, index)
 import StmHamt.Types
-import qualified StmHamt.Accessors.Hash as HashAccessors
 
 
 {-# INLINE atDepth #-}

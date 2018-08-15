@@ -20,8 +20,6 @@ import StmHamt.Prelude hiding (empty, insert, update, lookup, delete, null)
 import StmHamt.Types
 import qualified Focus as Focus
 import qualified StmHamt.Focuses as Focuses
-import qualified StmHamt.Constructors.Hash as HashConstructors
-import qualified StmHamt.Accessors.Hash as HashAccessors
 import qualified StmHamt.UnfoldMs as UnfoldMs
 import qualified StmHamt.ListT as ListT
 import qualified StmHamt.IntOps as IntOps
@@ -110,17 +108,18 @@ lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
 lookupExplicitly :: Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
 lookupExplicitly hash test (Hamt var) =
   {-# SCC "lookupExplicitly" #-}
-  let
-    !index = HashAccessors.index hash
-    in do
-      branchArray <- readTVar var
-      case SparseSmallArray.lookup index branchArray of
-        Just branch -> case branch of
-          LeavesBranch leavesHash leavesArray -> if leavesHash == hash
-            then return (SmallArray.find test leavesArray)
-            else return Nothing
-          BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test hamt
-        Nothing -> return Nothing
+  -- let
+  --   !index = HashAccessors.index hash
+  --   in do
+  --     branchArray <- readTVar var
+  --     case SparseSmallArray.lookup index branchArray of
+  --       Just branch -> case branch of
+  --         LeavesBranch leavesHash leavesArray -> if leavesHash == hash
+  --           then return (SmallArray.find test leavesArray)
+  --           else return Nothing
+  --         BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test hamt
+  --       Nothing -> return Nothing
+  undefined
 
 reset :: Hamt a -> STM ()
 reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArray.empty

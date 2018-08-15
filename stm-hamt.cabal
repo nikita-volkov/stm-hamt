@@ -27,9 +27,7 @@ library
     StmHamt.SizedHamt
   other-modules:
     StmHamt.IntOps
-    StmHamt.Accessors.Hash
     StmHamt.Constructors.Branch
-    StmHamt.Constructors.Hash
     StmHamt.Focuses
     StmHamt.Prelude
     StmHamt.Types
