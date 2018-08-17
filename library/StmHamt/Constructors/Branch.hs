@@ -2,20 +2,22 @@ module StmHamt.Constructors.Branch where
 
 import StmHamt.Prelude
 import StmHamt.Types
-import qualified StmHamt.Accessors.Hash as HashAccessors
-import qualified StmHamt.Constructors.Hash as HashConstructors
+import qualified StmHamt.IntOps as IntOps
 import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
 
 
 singleton :: Int -> a -> Branch a
 singleton hash a = LeavesBranch hash (pure a)
 
-pair :: Int -> Branch a -> Int -> Branch a -> STM (Branch a)
-pair hash1 branch1 hash2 branch2 =
+pair :: Int -> Int -> Branch a -> Int -> Branch a -> STM (Branch a)
+pair depth hash1 branch1 hash2 branch2 =
   {-# SCC "pair" #-}
   let
-    index1 = HashAccessors.index hash1
-    index2 = HashAccessors.index hash2
+    index1 = IntOps.indexAtDepth depth hash1
+    index2 = IntOps.indexAtDepth depth hash2
     in if index1 == index2
-      then pair (HashConstructors.succLevel hash1) branch1 (HashConstructors.succLevel hash2) branch2
+      then do
+        deeperBranch <- pair (IntOps.nextDepth depth) hash1 branch1 hash2 branch2
+        var <- newTVar (SparseSmallArray.singleton index1 deeperBranch)
+        return (BranchesBranch (Hamt var))
       else BranchesBranch . Hamt <$> newTVar (SparseSmallArray.pair index1 branch1 index2 branch2)
