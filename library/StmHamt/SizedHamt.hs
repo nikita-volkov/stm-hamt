@@ -26,34 +26,34 @@ import qualified StmHamt.Hamt as Hamt
 
 {-# INLINE new #-}
 new :: STM (SizedHamt element)
-new = SizedHamt <$> Hamt.new <*> newTVar 0
+new = SizedHamt <$> newTVar 0 <*> Hamt.new
 
 {-# INLINE newIO #-}
 newIO :: IO (SizedHamt element)
-newIO = SizedHamt <$> Hamt.newIO <*> newTVarIO 0
+newIO = SizedHamt <$> newTVarIO 0 <*> Hamt.newIO
 
 -- |
 -- /O(1)/.
 {-# INLINE null #-}
 null :: SizedHamt element -> STM Bool
-null (SizedHamt _ sizeVar) = (== 0) <$> readTVar sizeVar
+null (SizedHamt sizeVar _) = (== 0) <$> readTVar sizeVar
 
 -- |
 -- /O(1)/.
 {-# INLINE size #-}
 size :: SizedHamt element -> STM Int
-size (SizedHamt _ sizeVar) = readTVar sizeVar
+size (SizedHamt sizeVar _) = readTVar sizeVar
 
 {-# INLINE reset #-}
 reset :: SizedHamt element -> STM ()
-reset (SizedHamt hamt sizeVar) =
+reset (SizedHamt sizeVar hamt) =
   do
     Hamt.reset hamt
     writeTVar sizeVar 0
 
 {-# INLINE focus #-}
 focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> SizedHamt element -> STM result
-focus focus elementToKey key (SizedHamt hamt sizeVar) =
+focus focus elementToKey key (SizedHamt sizeVar hamt) =
   do
     (result, sizeModifier) <- Hamt.focus newFocus elementToKey key hamt
     forM_ sizeModifier (modifyTVar' sizeVar)
@@ -63,19 +63,19 @@ focus focus elementToKey key (SizedHamt hamt sizeVar) =
 
 {-# INLINE insert #-}
 insert :: (Eq key, Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
-insert elementToKey element (SizedHamt hamt sizeVar) =
+insert elementToKey element (SizedHamt sizeVar hamt) =
   do
     inserted <- Hamt.insert elementToKey element hamt
     when inserted (modifyTVar' sizeVar succ)
 
 {-# INLINE lookup #-}
 lookup :: (Eq key, Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
-lookup elementToKey key (SizedHamt hamt _) = Hamt.lookup elementToKey key hamt
+lookup elementToKey key (SizedHamt _ hamt) = Hamt.lookup elementToKey key hamt
 
 {-# INLINE unfoldM #-}
 unfoldM :: SizedHamt a -> UnfoldM STM a
-unfoldM (SizedHamt hamt _) = Hamt.unfoldM hamt
+unfoldM (SizedHamt _ hamt) = Hamt.unfoldM hamt
 
 {-# INLINE listT #-}
 listT :: SizedHamt a -> ListT STM a
-listT (SizedHamt hamt _) = Hamt.listT hamt
+listT (SizedHamt _ hamt) = Hamt.listT hamt
