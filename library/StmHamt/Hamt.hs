@@ -46,7 +46,7 @@ focusExplicitly focus hash test hamt =
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-insert :: (Eq key, Hashable key, Show element) => (element -> key) -> element -> Hamt element -> STM Bool
+insert :: (Eq key, Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
 insert elementToKey element = let
   !key = elementToKey element
   in insertExplicitly (hash key) ((==) key . elementToKey) element
@@ -54,21 +54,22 @@ insert elementToKey element = let
 {-|
 Returns a flag, specifying, whether the size has been affected.
 -}
-insertExplicitly :: Show a => Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
-insertExplicitly hash testKey element = {-# SCC "insertExplicitly" #-} iterate 0 where
-  iterate depth (Hamt var) = let
-    !branchIndex = IntOps.indexAtDepth depth hash
-    in do
-      branchArray <- readTVar var
-      case SparseSmallArray.lookup branchIndex branchArray of
-        Nothing -> do
-          writeTVar var $! SparseSmallArray.insert branchIndex (LeavesBranch hash (pure element)) branchArray
-          return True
-        Just branch -> case branch of
-          LeavesBranch leavesHash leavesArray ->
-            if leavesHash == hash
+insertExplicitly :: Int -> (a -> Bool) -> a -> Hamt a -> STM Bool
+insertExplicitly hash testKey element =
+  {-# SCC "insertExplicitly" #-}
+  let
+    loop depth (Hamt var) = let
+      !branchIndex = IntOps.indexAtDepth depth hash
+      in do
+        branchArray <- readTVar var
+        case SparseSmallArray.lookup branchIndex branchArray of
+          Nothing -> do
+            writeTVar var $! SparseSmallArray.insert branchIndex (LeavesBranch hash (pure element)) branchArray
+            return True
+          Just branch -> case branch of
+            LeavesBranch leavesHash leavesArray -> if leavesHash == hash
               then case SmallArray.findWithIndex testKey leavesArray of
-                Just (leavesIndex, leavesElement) -> let
+                Just (leavesIndex, _) -> let
                   !newLeavesArray = SmallArray.set leavesIndex element leavesArray
                   !newBranch = LeavesBranch hash newLeavesArray
                   !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
@@ -84,7 +85,8 @@ insertExplicitly hash testKey element = {-# SCC "insertExplicitly" #-} iterate 0
                 hamt <- pair (IntOps.nextDepth depth) hash (LeavesBranch hash (pure element)) leavesHash (LeavesBranch leavesHash leavesArray)
                 writeTVar var $! SparseSmallArray.replace branchIndex (BranchesBranch hamt) branchArray
                 return True
-          BranchesBranch hamt -> iterate (IntOps.nextDepth depth) hamt
+            BranchesBranch hamt -> loop (IntOps.nextDepth depth) hamt
+    in loop 0
 
 pair :: Int -> Int -> Branch a -> Int -> Branch a -> STM (Hamt a)
 pair depth hash1 branch1 hash2 branch2 =
@@ -106,20 +108,21 @@ lookup :: (Eq key, Hashable key) => (element -> key) -> key -> Hamt element -> S
 lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
 
 lookupExplicitly :: Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
-lookupExplicitly hash test (Hamt var) =
+lookupExplicitly hash test =
   {-# SCC "lookupExplicitly" #-}
-  -- let
-  --   !index = HashAccessors.index hash
-  --   in do
-  --     branchArray <- readTVar var
-  --     case SparseSmallArray.lookup index branchArray of
-  --       Just branch -> case branch of
-  --         LeavesBranch leavesHash leavesArray -> if leavesHash == hash
-  --           then return (SmallArray.find test leavesArray)
-  --           else return Nothing
-  --         BranchesBranch hamt -> lookupExplicitly (HashConstructors.succLevel hash) test hamt
-  --       Nothing -> return Nothing
-  undefined
+  let
+    loop depth (Hamt var) = let
+      !index = IntOps.indexAtDepth depth hash
+      in do
+        branchArray <- readTVar var
+        case SparseSmallArray.lookup index branchArray of
+          Just branch -> case branch of
+            LeavesBranch leavesHash leavesArray -> if leavesHash == hash
+              then return (SmallArray.find test leavesArray)
+              else return Nothing
+            BranchesBranch hamt -> loop (IntOps.nextDepth depth) hamt
+          Nothing -> return Nothing
+    in loop 0
 
 reset :: Hamt a -> STM ()
 reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArray.empty
@@ -134,3 +137,19 @@ null :: Hamt a -> STM Bool
 null (Hamt branchSsaVar) = do
   branchSsa <- readTVar branchSsaVar
   return (SparseSmallArray.null branchSsa)
+
+{-|
+Render the structure of HAMT.
+-}
+introspect :: Show a => Hamt a -> STM String
+introspect (Hamt branchArrayVar) = do
+  branchArray <- readTVar branchArrayVar
+  indexedList <- traverse (traverse introspectBranch) (SparseSmallArray.toIndexedList branchArray)
+  return $
+    "[" <> intercalate ", " (fmap (\ (i, branchString) -> "(" <> show i <> ", " <> branchString <> ")") indexedList) <> "]"
+  where
+    introspectBranch = \ case
+      BranchesBranch deeperHamt -> do
+        deeperString <- introspect deeperHamt
+        return (showString "BranchesBranch " deeperString)
+      LeavesBranch hash array -> return (showString "LeavesBranch " (shows hash (showChar ' ' (show (SmallArray.toList array)))))

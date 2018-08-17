@@ -16,5 +16,8 @@ pair depth hash1 branch1 hash2 branch2 =
     index1 = IntOps.indexAtDepth depth hash1
     index2 = IntOps.indexAtDepth depth hash2
     in if index1 == index2
-      then pair (IntOps.nextDepth depth) hash1 branch1 hash2 branch2
+      then do
+        deeperBranch <- pair (IntOps.nextDepth depth) hash1 branch1 hash2 branch2
+        var <- newTVar (SparseSmallArray.singleton index1 deeperBranch)
+        return (BranchesBranch (Hamt var))
       else BranchesBranch . Hamt <$> newTVar (SparseSmallArray.pair index1 branch1 index2 branch2)
