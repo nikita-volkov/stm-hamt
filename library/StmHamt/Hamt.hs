@@ -11,7 +11,7 @@ module StmHamt.Hamt
   lookup,
   lookupExplicitly,
   reset,
-  unfoldM,
+  unfoldlM,
   listT,
 )
 where
@@ -20,7 +20,7 @@ import StmHamt.Prelude hiding (empty, insert, update, lookup, delete, null)
 import StmHamt.Types
 import qualified Focus as Focus
 import qualified StmHamt.Focuses as Focus
-import qualified StmHamt.UnfoldMs as UnfoldMs
+import qualified StmHamt.UnfoldlM as UnfoldlM
 import qualified StmHamt.ListT as ListT
 import qualified StmHamt.IntOps as IntOps
 import qualified PrimitiveExtras.SmallArray as SmallArray
@@ -127,8 +127,8 @@ lookupExplicitly hash test =
 reset :: Hamt a -> STM ()
 reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArray.empty
 
-unfoldM :: Hamt a -> UnfoldM STM a
-unfoldM = UnfoldMs.hamtElements
+unfoldlM :: Hamt a -> UnfoldlM STM a
+unfoldlM = UnfoldlM.hamtElements
 
 listT :: Hamt a -> ListT STM a
 listT = ListT.hamtElements

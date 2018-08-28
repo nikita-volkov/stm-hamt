@@ -13,7 +13,7 @@ module StmHamt.SizedHamt
   insert,
   lookup,
   reset,
-  unfoldM,
+  unfoldlM,
   listT,
 )
 where
@@ -72,9 +72,9 @@ insert elementToKey element (SizedHamt sizeVar hamt) =
 lookup :: (Eq key, Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
 lookup elementToKey key (SizedHamt _ hamt) = Hamt.lookup elementToKey key hamt
 
-{-# INLINE unfoldM #-}
-unfoldM :: SizedHamt a -> UnfoldM STM a
-unfoldM (SizedHamt _ hamt) = Hamt.unfoldM hamt
+{-# INLINE unfoldlM #-}
+unfoldlM :: SizedHamt a -> UnfoldlM STM a
+unfoldlM (SizedHamt _ hamt) = Hamt.unfoldlM hamt
 
 {-# INLINE listT #-}
 listT :: SizedHamt a -> ListT STM a

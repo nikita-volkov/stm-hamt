@@ -15,7 +15,7 @@ import qualified Main.Gens as Gens
 import qualified StmHamt.Hamt as Hamt
 import qualified Data.HashMap.Strict as HashMap
 import qualified Focus
-import qualified DeferredFolds.UnfoldM as UnfoldM
+import qualified DeferredFolds.UnfoldlM as UnfoldlM
 
 
 main =
@@ -40,7 +40,7 @@ main =
       hamtToListInIo hamt =
         fmap reverse $
         atomically $
-        UnfoldM.foldlM' (\ state element -> return (element : state)) [] (Hamt.unfoldM hamt)
+        UnfoldlM.foldlM' (\ state element -> return (element : state)) [] (Hamt.unfoldlM hamt)
 
       listToListThruHamtInIo :: (Eq key, Hashable key, Eq value) => [(key, value)] -> IO [(key, value)]
       listToListThruHamtInIo = hamtFromListUsingInsertInIo >=> hamtToListInIo
@@ -203,7 +203,7 @@ main =
                       -- traceM =<< atomically (Hamt.introspect hamt)
                       result2 <- atomically $ applyToStmHamt hamt
                       -- traceM =<< atomically (Hamt.introspect hamt)
-                      list <- atomically $ UnfoldM.foldlM' (\ state element -> return (element : state)) [] (Hamt.unfoldM hamt)
+                      list <- atomically $ UnfoldlM.foldlM' (\ state element -> return (element : state)) [] (Hamt.unfoldlM hamt)
                       return (result2, sort list)
                     in
                       -- trace ("-----") $

@@ -94,8 +94,8 @@ import PrimitiveExtras.SparseSmallArray as Exports (SparseSmallArray)
 
 -- deferred-folds
 -------------------------
-import DeferredFolds.Unfold as Exports (Unfold(..))
-import DeferredFolds.UnfoldM as Exports (UnfoldM(..))
+import DeferredFolds.Unfoldl as Exports (Unfoldl(..))
+import DeferredFolds.UnfoldlM as Exports (UnfoldlM(..))
 
 -- list-t
 -------------------------
