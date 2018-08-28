@@ -1,5 +1,5 @@
 name: stm-hamt
-version: 1.1.2.1
+version: 1.2
 synopsis: STM-specialised Hash Array Mapped Trie
 description:
   A low-level data-structure,
