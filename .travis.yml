@@ -1,12 +1,15 @@
+if: tag IS blank
+
 env:
   - ghc=8.0.2
   - ghc=8.2.2
-  - ghc=8.4.2 benchmarks=1 tests=1
-  - ghc=8.6.1
+  - ghc=8.4.4
+  - ghc=8.6.5 benchmarks=1 tests=1
+  - ghc=8.8.1
 
 matrix:
   allow_failures:
-  - env: ghc=8.6.1
+  - env: ghc=8.8.1
 
 install:
   # Set up the Shell to treat the semicolon as &&
