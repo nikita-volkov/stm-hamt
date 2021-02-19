@@ -24,14 +24,14 @@ import qualified StmHamt.UnfoldlM as UnfoldlM
 import qualified StmHamt.ListT as ListT
 import qualified StmHamt.IntOps as IntOps
 import qualified PrimitiveExtras.SmallArray as SmallArray
-import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
+import qualified PrimitiveExtras.By6Bits as By6Bits
 
 
 new :: STM (Hamt a)
-new = Hamt <$> newTVar SparseSmallArray.empty
+new = Hamt <$> newTVar By6Bits.empty
 
 newIO :: IO (Hamt a)
-newIO = Hamt <$> newTVarIO SparseSmallArray.empty
+newIO = Hamt <$> newTVarIO By6Bits.empty
 
 focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
 focus focus elementToKey key = focusExplicitly focus (hash key) ((==) key . elementToKey)
@@ -62,9 +62,9 @@ insertExplicitly hash testKey element =
       !branchIndex = IntOps.indexAtDepth depth hash
       in do
         branchArray <- readTVar var
-        case SparseSmallArray.lookup branchIndex branchArray of
+        case By6Bits.lookup branchIndex branchArray of
           Nothing -> do
-            writeTVar var $! SparseSmallArray.insert branchIndex (LeavesBranch hash (pure element)) branchArray
+            writeTVar var $! By6Bits.insert branchIndex (LeavesBranch hash (pure element)) branchArray
             return True
           Just branch -> case branch of
             LeavesBranch leavesHash leavesArray -> if leavesHash == hash
@@ -72,18 +72,18 @@ insertExplicitly hash testKey element =
                 Just (leavesIndex, _) -> let
                   !newLeavesArray = SmallArray.set leavesIndex element leavesArray
                   !newBranch = LeavesBranch hash newLeavesArray
-                  !newBranchArray = SparseSmallArray.replace branchIndex newBranch branchArray
+                  !newBranchArray = By6Bits.replace branchIndex newBranch branchArray
                   in do
                     writeTVar var newBranchArray
                     return False
                 Nothing -> let
                   newLeavesArray = SmallArray.cons element leavesArray
                   in do
-                    writeTVar var $! SparseSmallArray.replace branchIndex (LeavesBranch hash newLeavesArray) branchArray
+                    writeTVar var $! By6Bits.replace branchIndex (LeavesBranch hash newLeavesArray) branchArray
                     return True
               else do
                 hamt <- pair (IntOps.nextDepth depth) hash (LeavesBranch hash (pure element)) leavesHash (LeavesBranch leavesHash leavesArray)
-                writeTVar var $! SparseSmallArray.replace branchIndex (BranchesBranch hamt) branchArray
+                writeTVar var $! By6Bits.replace branchIndex (BranchesBranch hamt) branchArray
                 return True
             BranchesBranch hamt -> loop (IntOps.nextDepth depth) hamt
     in loop 0
@@ -97,9 +97,9 @@ pair depth hash1 branch1 hash2 branch2 =
     in if index1 == index2
         then do
           deeperHamt <- pair (IntOps.nextDepth depth) hash1 branch1 hash2 branch2
-          var <- newTVar (SparseSmallArray.singleton index1 (BranchesBranch deeperHamt))
+          var <- newTVar (By6Bits.singleton index1 (BranchesBranch deeperHamt))
           return (Hamt var)
-        else Hamt <$> newTVar (SparseSmallArray.pair index1 branch1 index2 branch2)
+        else Hamt <$> newTVar (By6Bits.pair index1 branch1 index2 branch2)
 
 {-|
 Returns a flag, specifying, whether the size has been affected.
@@ -115,7 +115,7 @@ lookupExplicitly hash test =
       !index = IntOps.indexAtDepth depth hash
       in do
         branchArray <- readTVar var
-        case SparseSmallArray.lookup index branchArray of
+        case By6Bits.lookup index branchArray of
           Just branch -> case branch of
             LeavesBranch leavesHash leavesArray -> if leavesHash == hash
               then return (SmallArray.find test leavesArray)
@@ -125,7 +125,7 @@ lookupExplicitly hash test =
     in loop 0
 
 reset :: Hamt a -> STM ()
-reset (Hamt branchSsaVar) = writeTVar branchSsaVar SparseSmallArray.empty
+reset (Hamt branchSsaVar) = writeTVar branchSsaVar By6Bits.empty
 
 unfoldlM :: Hamt a -> UnfoldlM STM a
 unfoldlM = UnfoldlM.hamtElements
@@ -136,7 +136,7 @@ listT = ListT.hamtElements
 null :: Hamt a -> STM Bool
 null (Hamt branchSsaVar) = do
   branchSsa <- readTVar branchSsaVar
-  return (SparseSmallArray.null branchSsa)
+  return (By6Bits.null branchSsa)
 
 {-|
 Render the structure of HAMT.
@@ -144,7 +144,7 @@ Render the structure of HAMT.
 introspect :: Show a => Hamt a -> STM String
 introspect (Hamt branchArrayVar) = do
   branchArray <- readTVar branchArrayVar
-  indexedList <- traverse (traverse introspectBranch) (SparseSmallArray.toIndexedList branchArray)
+  indexedList <- traverse (traverse introspectBranch) (By6Bits.toIndexedList branchArray)
   return $
     "[" <> intercalate ", " (fmap (\ (i, branchString) -> "(" <> show i <> ", " <> branchString <> ")") indexedList) <> "]"
   where

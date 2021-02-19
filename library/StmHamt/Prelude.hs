@@ -90,7 +90,7 @@ import Data.Primitive as Exports
 
 -- primitive-extras
 -------------------------
-import PrimitiveExtras.SparseSmallArray as Exports (SparseSmallArray)
+import PrimitiveExtras.By6Bits as Exports (By6Bits)
 
 -- deferred-folds
 -------------------------

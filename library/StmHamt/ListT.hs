@@ -4,11 +4,11 @@ import StmHamt.Prelude hiding (filter, all)
 import StmHamt.Types
 import ListT
 import qualified PrimitiveExtras.SmallArray as SmallArray
-import qualified PrimitiveExtras.SparseSmallArray as SparseSmallArray
+import qualified PrimitiveExtras.By6Bits as By6Bits
 
 
 hamtElements :: Hamt a -> ListT STM a
-hamtElements (Hamt var) = tVarValue var >>= SparseSmallArray.elementsListT >>= branchElements
+hamtElements (Hamt var) = tVarValue var >>= By6Bits.elementsListT >>= branchElements
 
 branchElements :: Branch a -> ListT STM a
 branchElements = \ case

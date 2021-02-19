@@ -13,6 +13,6 @@ data SizedHamt element = SizedHamt !(TVar Int) !(Hamt element)
 {-|
 STM-specialized Hash Array Mapped Trie.
 -}
-newtype Hamt element = Hamt (TVar (SparseSmallArray (Branch element)))
+newtype Hamt element = Hamt (TVar (By6Bits (Branch element)))
 
 data Branch element = BranchesBranch !(Hamt element) | LeavesBranch !Int !(SmallArray element)
