@@ -1,1 +1,4 @@
-resolver: nightly-2021-11-06
+resolver: nightly-2022-08-04
+extra-deps:
+  - criterion-1.6.0.0
+  - criterion-measurement-0.2.0.0
