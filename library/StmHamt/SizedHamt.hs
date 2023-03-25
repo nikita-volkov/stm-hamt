@@ -50,7 +50,7 @@ reset (SizedHamt sizeVar hamt) =
     writeTVar sizeVar 0
 
 {-# INLINE focus #-}
-focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> SizedHamt element -> STM result
+focus :: (Hashable key) => Focus element STM result -> (element -> key) -> key -> SizedHamt element -> STM result
 focus focus elementToKey key (SizedHamt sizeVar hamt) =
   do
     (result, sizeModifier) <- Hamt.focus newFocus elementToKey key hamt
@@ -60,14 +60,14 @@ focus focus elementToKey key (SizedHamt sizeVar hamt) =
     newFocus = Focus.testingSizeChange (Just pred) Nothing (Just succ) focus
 
 {-# INLINE insert #-}
-insert :: (Eq key, Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
+insert :: (Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
 insert elementToKey element (SizedHamt sizeVar hamt) =
   do
     inserted <- Hamt.insert elementToKey element hamt
     when inserted (modifyTVar' sizeVar succ)
 
 {-# INLINE lookup #-}
-lookup :: (Eq key, Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
+lookup :: (Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
 lookup elementToKey key (SizedHamt _ hamt) = Hamt.lookup elementToKey key hamt
 
 {-# INLINE unfoldlM #-}

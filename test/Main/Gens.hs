@@ -1,7 +1,5 @@
 module Main.Gens where
 
-import qualified Data.HashMap.Strict as HashMap
-import Focus (Focus (..))
 import Main.Transaction (Transaction)
 import qualified Main.Transaction as Transaction
 import StmHamt.Hamt (Hamt)

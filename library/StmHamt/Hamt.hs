@@ -15,13 +15,12 @@ module StmHamt.Hamt
   )
 where
 
-import qualified Focus as Focus
 import qualified PrimitiveExtras.By6Bits as By6Bits
 import qualified PrimitiveExtras.SmallArray as SmallArray
 import qualified StmHamt.Focuses as Focus
 import qualified StmHamt.IntOps as IntOps
 import qualified StmHamt.ListT as ListT
-import StmHamt.Prelude hiding (delete, empty, insert, lookup, null, update)
+import StmHamt.Prelude hiding (delete, empty, insert, lookup, null)
 import StmHamt.Types
 import qualified StmHamt.UnfoldlM as UnfoldlM
 
@@ -31,7 +30,7 @@ new = Hamt <$> newTVar By6Bits.empty
 newIO :: IO (Hamt a)
 newIO = Hamt <$> newTVarIO By6Bits.empty
 
-focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
+focus :: (Hashable key) => Focus element STM result -> (element -> key) -> key -> Hamt element -> STM result
 focus focus elementToKey key = focusExplicitly focus (hash key) ((==) key . elementToKey)
 
 focusExplicitly :: Focus a STM b -> Int -> (a -> Bool) -> Hamt a -> STM b
@@ -42,7 +41,7 @@ focusExplicitly focus hash test hamt =
 
 -- |
 -- Returns a flag, specifying, whether the size has been affected.
-insert :: (Eq key, Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
+insert :: (Hashable key) => (element -> key) -> element -> Hamt element -> STM Bool
 insert elementToKey element =
   let !key = elementToKey element
    in insertExplicitly (hash key) ((==) key . elementToKey) element
@@ -97,7 +96,7 @@ pair depth hash1 branch1 hash2 branch2 =
 
 -- |
 -- Returns a flag, specifying, whether the size has been affected.
-lookup :: (Eq key, Hashable key) => (element -> key) -> key -> Hamt element -> STM (Maybe element)
+lookup :: (Hashable key) => (element -> key) -> key -> Hamt element -> STM (Maybe element)
 lookup elementToKey key = lookupExplicitly (hash key) ((==) key . elementToKey)
 
 lookupExplicitly :: Int -> (a -> Bool) -> Hamt a -> STM (Maybe a)
@@ -130,18 +129,3 @@ null :: Hamt a -> STM Bool
 null (Hamt branchSsaVar) = do
   branchSsa <- readTVar branchSsaVar
   return (By6Bits.null branchSsa)
-
--- |
--- Render the structure of HAMT.
-introspect :: (Show a) => Hamt a -> STM String
-introspect (Hamt branchArrayVar) = do
-  branchArray <- readTVar branchArrayVar
-  indexedList <- traverse (traverse introspectBranch) (By6Bits.toIndexedList branchArray)
-  return $
-    "[" <> intercalate ", " (fmap (\(i, branchString) -> "(" <> show i <> ", " <> branchString <> ")") indexedList) <> "]"
-  where
-    introspectBranch = \case
-      BranchesBranch deeperHamt -> do
-        deeperString <- introspect deeperHamt
-        return (showString "BranchesBranch " deeperString)
-      LeavesBranch hash array -> return (showString "LeavesBranch " (shows hash (showChar ' ' (show (SmallArray.toList array)))))

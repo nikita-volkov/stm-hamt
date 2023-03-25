@@ -193,8 +193,6 @@ benchmark concurrent-insertion-bench
     , criterion >=1.5 && <1.7
     , focus
     , free >=4.5 && <6
-    , list-t
-    , mwc-random >=0.13 && <0.16
     , mwc-random-monad >=0.7 && <0.8
     , rebase <2
     , stm-hamt

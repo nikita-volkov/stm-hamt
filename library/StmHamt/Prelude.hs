@@ -7,8 +7,6 @@ module StmHamt.Prelude
   )
 where
 
--- base
--------------------------
 import Control.Applicative as Exports
 import Control.Arrow as Exports
 import Control.Category as Exports
@@ -18,8 +16,6 @@ import Control.Monad as Exports hiding (forM, forM_, mapM, mapM_, msum, sequence
 import Control.Monad.Fix as Exports hiding (fix)
 import Control.Monad.IO.Class as Exports
 import Control.Monad.ST as Exports
--- transformers
--------------------------
 import Control.Monad.Trans.Class as Exports
 import Data.Bits as Exports
 import Data.Bool as Exports
@@ -33,8 +29,6 @@ import Data.Fixed as Exports
 import Data.Foldable as Exports
 import Data.Function as Exports hiding (id, (.))
 import Data.Functor as Exports
--- hashable
--------------------------
 import Data.Hashable as Exports (Hashable (..))
 import Data.IORef as Exports
 import Data.Int as Exports
@@ -43,11 +37,6 @@ import Data.List as Exports hiding (all, and, any, concat, concatMap, elem, find
 import Data.Maybe as Exports
 import Data.Monoid as Exports hiding (First (..), Last (..))
 import Data.Ord as Exports
--- focus
--------------------------
-
--- primitive
--------------------------
 import Data.Primitive as Exports
 import Data.Proxy as Exports
 import Data.Ratio as Exports
@@ -59,11 +48,6 @@ import Data.Unique as Exports
 import Data.Version as Exports
 import Data.Word as Exports
 import Debug.Trace as Exports
--- primitive-extras
--------------------------
-
--- deferred-folds
--------------------------
 import DeferredFolds.Unfoldl as Exports (Unfoldl (..))
 import DeferredFolds.UnfoldlM as Exports (UnfoldlM (..))
 import Focus as Exports (Focus (..))
@@ -75,8 +59,6 @@ import GHC.Conc as Exports hiding (threadWaitRead, threadWaitReadSTM, threadWait
 import GHC.Exts as Exports (groupWith, inline, lazy, sortWith)
 import GHC.Generics as Exports (Generic)
 import GHC.IO.Exception as Exports
--- list-t
--------------------------
 import ListT as Exports (ListT (..))
 import Numeric as Exports
 import PrimitiveExtras.By6Bits as Exports (By6Bits)
@@ -88,8 +70,6 @@ import System.IO.Unsafe as Exports
 import System.Mem as Exports
 import System.Mem.StableName as Exports
 import System.Timeout as Exports
-import Text.ParserCombinators.ReadP as Exports (ReadP, ReadS, readP_to_S, readS_to_P)
-import Text.ParserCombinators.ReadPrec as Exports (ReadPrec, readP_to_Prec, readPrec_to_P, readPrec_to_S, readS_to_Prec)
 import Text.Printf as Exports (hPrintf, printf)
 import Text.Read as Exports (Read (..), readEither, readMaybe)
 import Unsafe.Coerce as Exports

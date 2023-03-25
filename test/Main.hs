@@ -9,25 +9,24 @@ import qualified Main.Transaction as Transaction
 import StmHamt.Hamt (Hamt)
 import qualified StmHamt.Hamt as Hamt
 import Test.QuickCheck hiding ((.&.))
-import Test.QuickCheck.Instances
-import Test.QuickCheck.Property hiding (testCase, (.&.))
+import Test.QuickCheck.Instances ()
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding ((.&.))
-import Test.Tasty.Runners
 import Prelude
 
+main :: IO ()
 main =
   defaultMain $
     testGroup "All" $
       [ testGroup "Hamt" $
-          let hamtFromListUsingInsertWithHashInIo :: (Eq key, Eq value) => (key -> Int) -> [(key, value)] -> IO (Hamt (key, value))
+          let hamtFromListUsingInsertWithHashInIo :: (Eq key) => (key -> Int) -> [(key, value)] -> IO (Hamt (key, value))
               hamtFromListUsingInsertWithHashInIo hash list = do
                 hamt <- Hamt.newIO
                 atomically $ forM_ list $ \(key, value) -> Hamt.insertExplicitly (hash key) ((==) key . fst) (key, value) hamt
                 return hamt
 
-              hamtFromListUsingInsertInIo :: (Eq key, Hashable key, Eq value) => [(key, value)] -> IO (Hamt (key, value))
+              hamtFromListUsingInsertInIo :: (Hashable key) => [(key, value)] -> IO (Hamt (key, value))
               hamtFromListUsingInsertInIo list = do
                 hamt <- Hamt.newIO
                 atomically $ forM_ list $ \pair -> Hamt.insert fst pair hamt
@@ -39,7 +38,7 @@ main =
                   atomically $
                     UnfoldlM.foldlM' (\state element -> return (element : state)) [] (Hamt.unfoldlM hamt)
 
-              listToListThruHamtInIo :: (Eq key, Hashable key, Eq value) => [(key, value)] -> IO [(key, value)]
+              listToListThruHamtInIo :: (Hashable key) => [(key, value)] -> IO [(key, value)]
               listToListThruHamtInIo = hamtFromListUsingInsertInIo >=> hamtToListInIo
            in [ testCase "insert" $
                   let list =

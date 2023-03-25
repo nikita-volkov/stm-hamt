@@ -2,7 +2,6 @@ module Main where
 
 import qualified Control.Concurrent.Async as B
 import Control.Monad.Free
-import Control.Monad.Free.TH
 import Criterion.Main
 import qualified Focus as D
 import qualified Rebase.Data.Text as E
@@ -13,8 +12,6 @@ import qualified System.Random.MWC.Monad as C
 
 -- * Transactions
 
--------------------------
-
 data TransactionF row n where
   Insert :: row -> n -> TransactionF row n
   deriving (Functor)
@@ -22,8 +19,6 @@ data TransactionF row n where
 type Transaction row = Free (TransactionF row)
 
 -- * Interpreters
-
--------------------------
 
 type Interpreter container =
   forall row. (Hashable row, Eq row) => container row -> forall result. Transaction row result -> STM result
@@ -40,8 +35,6 @@ focusInterpreter container =
 
 -- * Session and runners
 
--------------------------
-
 -- | A list of transactions per thread.
 type Session row = [[Transaction row ()]]
 
@@ -55,8 +48,6 @@ sessionRunner interpreter threadTransactions = do
     forM_ actions $ atomically . interpreter m
 
 -- * Generators
-
--------------------------
 
 type Generator a = C.Rand IO a
 
@@ -78,8 +69,6 @@ textGenerator = do
 
 -- * Utils
 
--------------------------
-
 slices :: Int -> [a] -> [[a]]
 slices size l =
   case splitAt size l of
@@ -88,8 +77,7 @@ slices size l =
 
 -- * Main
 
--------------------------
-
+main :: IO ()
 main = do
   allTransactions <- C.runWithSeed seed $ replicateM actionsNum transactionGenerator
   defaultMain $! flip map threadsNums $! \threadsNum ->
