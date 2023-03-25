@@ -1,8 +1,7 @@
 module StmHamt.IntOps where
 
-import StmHamt.Prelude hiding (mask, index)
+import StmHamt.Prelude hiding (index, mask)
 import StmHamt.Types
-
 
 {-# INLINE atDepth #-}
 atDepth :: Int -> Int -> Int

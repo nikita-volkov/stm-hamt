@@ -3,26 +3,24 @@
 -- optimized for a fast 'size' operation.
 -- That however comes at the cost of a small overhead in the other operations.
 module StmHamt.SizedHamt
-(
-  SizedHamt,
-  new,
-  newIO,
-  null,
-  size,
-  focus,
-  insert,
-  lookup,
-  reset,
-  unfoldlM,
-  listT,
-)
+  ( SizedHamt,
+    new,
+    newIO,
+    null,
+    size,
+    focus,
+    insert,
+    lookup,
+    reset,
+    unfoldlM,
+    listT,
+  )
 where
 
-import StmHamt.Prelude hiding (insert, lookup, delete, fold, null)
-import StmHamt.Types
 import qualified Focus as Focus
 import qualified StmHamt.Hamt as Hamt
-
+import StmHamt.Prelude hiding (delete, fold, insert, lookup, null)
+import StmHamt.Types
 
 {-# INLINE new #-}
 new :: STM (SizedHamt element)
