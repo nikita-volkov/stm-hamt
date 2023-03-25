@@ -64,7 +64,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.ghc }}-
 
       - name: Install deps and compile
-        run: cabal build --enable-tests --enable-benchmarks -j +RTS -A128m -n2m -N -RTS --ghc-options="${{ matrix.ghc-options }}"
+        run: cabal build --enable-tests -j +RTS -A128m -n2m -N -RTS --ghc-options="${{ matrix.ghc-options }}"
 
       - name: Test
         run: cabal test --test-show-details always
