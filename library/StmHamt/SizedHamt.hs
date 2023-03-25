@@ -3,26 +3,24 @@
 -- optimized for a fast 'size' operation.
 -- That however comes at the cost of a small overhead in the other operations.
 module StmHamt.SizedHamt
-(
-  SizedHamt,
-  new,
-  newIO,
-  null,
-  size,
-  focus,
-  insert,
-  lookup,
-  reset,
-  unfoldlM,
-  listT,
-)
+  ( SizedHamt,
+    new,
+    newIO,
+    null,
+    size,
+    focus,
+    insert,
+    lookup,
+    reset,
+    unfoldlM,
+    listT,
+  )
 where
 
-import StmHamt.Prelude hiding (insert, lookup, delete, fold, null)
-import StmHamt.Types
 import qualified Focus as Focus
 import qualified StmHamt.Hamt as Hamt
-
+import StmHamt.Prelude hiding (delete, fold, insert, lookup, null)
+import StmHamt.Types
 
 {-# INLINE new #-}
 new :: STM (SizedHamt element)
@@ -52,7 +50,7 @@ reset (SizedHamt sizeVar hamt) =
     writeTVar sizeVar 0
 
 {-# INLINE focus #-}
-focus :: (Eq key, Hashable key) => Focus element STM result -> (element -> key) -> key -> SizedHamt element -> STM result
+focus :: (Hashable key) => Focus element STM result -> (element -> key) -> key -> SizedHamt element -> STM result
 focus focus elementToKey key (SizedHamt sizeVar hamt) =
   do
     (result, sizeModifier) <- Hamt.focus newFocus elementToKey key hamt
@@ -62,14 +60,14 @@ focus focus elementToKey key (SizedHamt sizeVar hamt) =
     newFocus = Focus.testingSizeChange (Just pred) Nothing (Just succ) focus
 
 {-# INLINE insert #-}
-insert :: (Eq key, Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
+insert :: (Hashable key) => (element -> key) -> element -> SizedHamt element -> STM ()
 insert elementToKey element (SizedHamt sizeVar hamt) =
   do
     inserted <- Hamt.insert elementToKey element hamt
     when inserted (modifyTVar' sizeVar succ)
 
 {-# INLINE lookup #-}
-lookup :: (Eq key, Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
+lookup :: (Hashable key) => (element -> key) -> key -> SizedHamt element -> STM (Maybe element)
 lookup elementToKey key (SizedHamt _ hamt) = Hamt.lookup elementToKey key hamt
 
 {-# INLINE unfoldlM #-}

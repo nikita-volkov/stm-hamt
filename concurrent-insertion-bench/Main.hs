@@ -1,19 +1,16 @@
 module Main where
 
-import Rebase.Prelude
-import Criterion.Main
-import Control.Monad.Free
-import Control.Monad.Free.TH
-import qualified StmHamt.Hamt as A
 import qualified Control.Concurrent.Async as B
-import qualified System.Random.MWC.Monad as C
+import Control.Monad.Free
+import Criterion.Main
 import qualified Focus as D
 import qualified Rebase.Data.Text as E
 import qualified Rebase.Data.Vector as F
+import Rebase.Prelude
+import qualified StmHamt.Hamt as A
+import qualified System.Random.MWC.Monad as C
 
-
--- * Transactions 
--------------------------
+-- * Transactions
 
 data TransactionF row n where
   Insert :: row -> n -> TransactionF row n
@@ -21,11 +18,9 @@ data TransactionF row n where
 
 type Transaction row = Free (TransactionF row)
 
-
 -- * Interpreters
--------------------------
 
-type Interpreter container = 
+type Interpreter container =
   forall row. (Hashable row, Eq row) => container row -> forall result. Transaction row result -> STM result
 
 specializedInterpreter :: Interpreter A.Hamt
@@ -38,14 +33,12 @@ focusInterpreter container =
   iterM $ \case
     Insert row continue -> A.focus (D.insert row) id row container >> continue
 
-
 -- * Session and runners
--------------------------
 
 -- | A list of transactions per thread.
 type Session row = [[Transaction row ()]]
 
-type SessionRunner = 
+type SessionRunner =
   forall row. (Hashable row, Eq row) => Session row -> IO ()
 
 sessionRunner :: Interpreter A.Hamt -> SessionRunner
@@ -54,9 +47,7 @@ sessionRunner interpreter threadTransactions = do
   void $ flip B.mapConcurrently threadTransactions $ \actions -> do
     forM_ actions $ atomically . interpreter m
 
-
 -- * Generators
--------------------------
 
 type Generator a = C.Rand IO a
 
@@ -76,9 +67,7 @@ textGenerator = do
     char =
       chr <$> C.uniformR (ord 'a', ord 'z')
 
-
 -- * Utils
--------------------------
 
 slices :: Int -> [a] -> [[a]]
 slices size l =
@@ -86,28 +75,26 @@ slices size l =
     ([], _) -> []
     (a, b) -> a : slices size b
 
-
 -- * Main
--------------------------
 
+main :: IO ()
 main = do
   allTransactions <- C.runWithSeed seed $ replicateM actionsNum transactionGenerator
   defaultMain $! flip map threadsNums $! \threadsNum ->
-    let
-      sliceSize = actionsNum `div` threadsNum
-      threadTransactions = slices sliceSize allTransactions
-      in 
-        bgroup
+    let sliceSize = actionsNum `div` threadsNum
+        threadTransactions = slices sliceSize allTransactions
+     in bgroup
           (shows threadsNum . showString "/" . shows sliceSize $ "")
-          [
-            bench "Focus-based" $ nfIO $
-              sessionRunner focusInterpreter threadTransactions,
-            bench "Specialized" $ nfIO $
-              sessionRunner specializedInterpreter threadTransactions
+          [ bench "Focus-based" $
+              nfIO $
+                sessionRunner focusInterpreter threadTransactions,
+            bench "Specialized" $
+              nfIO $
+                sessionRunner specializedInterpreter threadTransactions
           ]
   where
     seed =
-      C.toSeed (F.fromList [1..7])
+      C.toSeed (F.fromList [1 .. 7])
     actionsNum =
       100000
     threadsNums =
