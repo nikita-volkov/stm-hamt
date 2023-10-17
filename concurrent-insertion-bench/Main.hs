@@ -5,10 +5,9 @@ import Control.Monad.Free
 import Criterion.Main
 import qualified Focus as D
 import qualified Rebase.Data.Text as E
-import qualified Rebase.Data.Vector as F
 import Rebase.Prelude
 import qualified StmHamt.Hamt as A
-import qualified System.Random.MWC.Monad as C
+import qualified System.Random as G
 
 -- * Transactions
 
@@ -49,7 +48,7 @@ sessionRunner interpreter threadTransactions = do
 
 -- * Generators
 
-type Generator a = C.Rand IO a
+type Generator a = State G.StdGen a
 
 transactionGenerator :: Generator (Transaction Text ())
 transactionGenerator = do
@@ -63,9 +62,9 @@ textGenerator = do
   return $! E.pack s
   where
     length =
-      C.uniformR (7, 20)
+      state $ G.uniformR (7, 20)
     char =
-      chr <$> C.uniformR (ord 'a', ord 'z')
+      chr <$> state (G.uniformR (ord 'a', ord 'z'))
 
 -- * Utils
 
@@ -79,7 +78,7 @@ slices size l =
 
 main :: IO ()
 main = do
-  allTransactions <- C.runWithSeed seed $ replicateM actionsNum transactionGenerator
+  allTransactions <- G.getStdRandom $ runState $ replicateM actionsNum transactionGenerator
   defaultMain $! flip map threadsNums $! \threadsNum ->
     let sliceSize = actionsNum `div` threadsNum
         threadTransactions = slices sliceSize allTransactions
@@ -93,8 +92,6 @@ main = do
                 sessionRunner specializedInterpreter threadTransactions
           ]
   where
-    seed =
-      C.toSeed (F.fromList [1 .. 7])
     actionsNum =
       100000
     threadsNums =

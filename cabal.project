@@ -1,12 +1,1 @@
 packages: .
-with-compiler: ghc-9.6.3
-constraints:
-  , primitive >=0.9
-allow-newer:
-  , aeson:primitive
-  , deferred-folds:primitive
-  , foldl:primitive
-  , quickcheck-instances:primitive
-  , scientific:primitive
-  , vector-algorithms:primitive
-  , vector:primitive
