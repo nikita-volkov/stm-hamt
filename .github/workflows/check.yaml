@@ -25,3 +25,4 @@ jobs:
           ghc: ${{matrix.ghc}}
           ghc-options: ${{matrix.ghc-options}}
           ignore-haddock: ${{matrix.ignore-haddock}}
+          ignore-cabal-check: true
