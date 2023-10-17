@@ -39,8 +39,8 @@ onHamtElement :: Int -> Int -> (a -> Bool) -> Focus a STM b -> Focus (Hamt a) ST
 onHamtElement depth hash test focus =
   let branchIndex = IntOps.indexAtDepth depth hash
       Focus concealBranches revealBranches =
-        By6Bits.onElementAtFocus branchIndex $
-          onBranchElement depth hash test focus
+        By6Bits.onElementAtFocus branchIndex
+          $ onBranchElement depth hash test focus
       concealHamt =
         let hamtChangeStm = \case
               Leave -> return Leave
