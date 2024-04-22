@@ -12,6 +12,7 @@ module StmHamt.Hamt
     reset,
     unfoldlM,
     listT,
+    listTNonAtomic,
   )
 where
 
@@ -124,6 +125,9 @@ unfoldlM = UnfoldlM.hamtElements
 
 listT :: Hamt a -> ListT STM a
 listT = ListT.hamtElements
+
+listTNonAtomic :: Hamt a -> ListT IO a
+listTNonAtomic = ListT.hamtElementsNonAtomic
 
 null :: Hamt a -> STM Bool
 null (Hamt branchSsaVar) = do
