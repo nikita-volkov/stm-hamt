@@ -8,7 +8,8 @@ import StmHamt.Hamt (Hamt)
 import qualified StmHamt.Hamt as StmHamt
 import Prelude
 
-data Transaction = forall result.
+data Transaction
+  = forall result.
   (Show result, Eq result) =>
   Transaction
   { name :: Text,
