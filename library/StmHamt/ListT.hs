@@ -1,6 +1,5 @@
 module StmHamt.ListT where
 
-import qualified Control.Concurrent.STM as STM
 import ListT
 import qualified PrimitiveExtras.By6Bits as By6Bits
 import qualified PrimitiveExtras.SmallArray as SmallArray
