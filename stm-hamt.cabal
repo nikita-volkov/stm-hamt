@@ -82,7 +82,7 @@ library
     , hashable >=1.4.0.0 && <2
     , list-t >=1.0.1 && <1.1
     , primitive >=0.7 && <0.10
-    , primitive-extras >=0.10 && <0.11
+    , primitive-extras >=0.10.2 && <0.11
     , transformers >=0.5 && <0.7
 
 test-suite test
