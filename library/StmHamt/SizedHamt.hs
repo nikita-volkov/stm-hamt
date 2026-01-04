@@ -14,11 +14,13 @@ module StmHamt.SizedHamt
     reset,
     unfoldlM,
     listT,
+    listTNonAtomic,
   )
 where
 
 import qualified Focus as Focus
 import qualified StmHamt.Hamt as Hamt
+import qualified StmHamt.ListT as ListT
 import StmHamt.Prelude hiding (delete, fold, insert, lookup, null)
 import StmHamt.Types
 
@@ -77,3 +79,7 @@ unfoldlM (SizedHamt _ hamt) = Hamt.unfoldlM hamt
 {-# INLINE listT #-}
 listT :: SizedHamt a -> ListT STM a
 listT (SizedHamt _ hamt) = Hamt.listT hamt
+
+{-# INLINE listTNonAtomic #-}
+listTNonAtomic :: SizedHamt a -> ListT IO a
+listTNonAtomic (SizedHamt _ hamt) = ListT.hamtElementsNonAtomic hamt
