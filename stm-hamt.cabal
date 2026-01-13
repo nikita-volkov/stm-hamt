@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: stm-hamt
-version: 1.2.2
+version: 1.2.2.1
 synopsis: STM-specialised Hash Array Mapped Trie
 description:
   A low-level data-structure,
@@ -98,7 +98,7 @@ test-suite test
     QuickCheck >=2.8.1 && <3,
     deferred-folds,
     focus,
-    quickcheck-instances >=0.3.11 && <0.4,
+    quickcheck-instances >=0.3.11 && <0.5,
     rerebase <2,
     stm-hamt,
     tasty >=0.12 && <2,
