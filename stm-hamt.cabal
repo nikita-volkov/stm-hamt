@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: stm-hamt
-version: 1.2.2
+version: 1.2.2.1
 synopsis: STM-specialised Hash Array Mapped Trie
 description:
   A low-level data-structure,
